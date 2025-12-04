@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
+    "postinstall": "prisma generate",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "prepare": "husky || true",
