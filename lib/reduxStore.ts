@@ -42,7 +42,7 @@ export async function fetchCardSet(
 
   try {
     const response = await fetch(
-      `http://localhost:3000/api/queue-card/fetchSet`,
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/fetchSet`,
       {
         method: "POST",
         body: JSON.stringify({ id }),
