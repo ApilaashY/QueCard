@@ -21,7 +21,7 @@ export default function Home() {
     try {
       console.log("Sending request to /api/queue-card/generate");
       const response = await fetch(
-        "http://localhost:3000/api/queue-card/generate",
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/generate`,
         {
           method: "POST",
           body: formDataToSend,

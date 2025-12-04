@@ -41,7 +41,7 @@ export default function RootLayout({
     async function fetchSets() {
       try {
         const response = await fetch(
-          "http://localhost:3000/api/queue-card/fetchSets",
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/fetchSets`,
           {
             method: "POST",
           }
