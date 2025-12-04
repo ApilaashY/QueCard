@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleAIFileManager } from "@google/generative-ai/server";
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -24,13 +24,11 @@ export async function POST(request: NextRequest) {
     console.log("Checking if PDF already processed:", pdfHash);
 
     // Check if PDF already exists in database
-    const { data: existingPdf, error: fetchError } = await supabase
-      .from("pdf_flashcards")
-      .select("*")
-      .eq("pdf_hash", pdfHash)
-      .single();
+    const existingPdf = await prisma.cardSets.findUnique({
+      where: { pdf_hash: pdfHash },
+    });
 
-    if (existingPdf && !fetchError) {
+    if (existingPdf) {
       console.log("Found existing PDF in database");
       return NextResponse.json({
         success: true,
@@ -72,9 +70,9 @@ export async function POST(request: NextRequest) {
 
     // Generate content using the uploaded file
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash", // Use stable model instead
+      model: "gemini-2.5-flash",
       systemInstruction:
-        "You will be given a PDF document to analyze and generate questions for. Only respond with flash card questions based on the content. Each question seperated with a new line character.",
+        "You will be given a PDF document to analyze and generate questions for. Only respond with flash card questions based on the content, then a newline character and then the answer to the question. Each question seperated with a new line character.",
     });
 
     // Use streaming for faster response
@@ -86,7 +84,7 @@ export async function POST(request: NextRequest) {
         },
       },
       {
-        text: "Analyze this PDF document and provide flash card questions. Be concise.",
+        text: "Analyze this PDF document and provide flash card questions. Be concise. Try not to create administrative questions like who is running the course. The first line you return should be an appropriate titles for the set of flashcards.",
       },
     ]);
 
@@ -95,17 +93,19 @@ export async function POST(request: NextRequest) {
       text += chunk.text();
     }
 
-    // Store in Supabase for future use
-    const { error: insertError } = await supabase
-      .from("pdf_flashcards")
-      .insert({
-        pdf_hash: pdfHash,
-        file_name: pdfFile.name,
-        flashcards: text,
-        file_size: pdfFile.size,
+    // Store in database for future use
+    try {
+      await prisma.cardSets.create({
+        data: {
+          pdf_hash: pdfHash,
+          file_name: pdfFile.name,
+          title: text.split("\n")[0], // First line as title
+          flashcards: text.split("\n").slice(1).join("\n"), // Skip the title line
+          file_size: pdfFile.size,
+          owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93", // Static user for now
+        },
       });
-
-    if (insertError) {
+    } catch (insertError) {
       console.error("Error storing in database:", insertError);
       // Continue anyway, just won't be cached
     }

@@ -1,10 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
 export default function Home() {
   // State for the questions
-  const [questions, setQuestions] = useState<string | null>(null);
 
   async function handleClick(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,24 +31,24 @@ export default function Home() {
       const result = await response.json();
       console.log("Response:", result);
 
-      setQuestions(result.response);
+      // setQuestions(result.response);
+      // NOTE CHANGE THIS TO RECEIVE A SET ID AND REDIRECT TO /id PAGE
     } catch (error) {
       console.error("Error:", error);
     }
   }
 
   return (
-    <div>
-      <form onSubmit={handleClick}>
-        <input type="file" name="PDF" accept="application/pdf" />
-        <button type="submit">Generate Queue Card</button>
+    <div className="flex flex-col justify-center items-center min-h-screen">
+      <form onSubmit={handleClick} className="flex flex-col gap-4">
+        <input type="file" name="PDF" accept="application/pdf" required />
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Upload PDF and Generate Flashcards
+        </button>
       </form>
-      {questions && (
-        <div>
-          <h2>Generated Questions:</h2>
-          <pre>{questions}</pre>
-        </div>
-      )}
     </div>
   );
 }
