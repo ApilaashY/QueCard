@@ -7,5 +7,5 @@ global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 
 // Mock environment variables for tests
 process.env.GEMINI_API_KEY = "test-api-key";
-process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+process.env.SUPABASE_URL = "https://test.supabase.co";
+process.env.SUPABASE_ANON_KEY = "test-anon-key";
