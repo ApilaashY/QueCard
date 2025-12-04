@@ -10,11 +10,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const set = await prisma.cardSets.findUnique({
+    const set = await prisma.card_sets.findUnique({
       where: { id: id },
     });
 
-    return NextResponse.json({ ...set }, { status: 200 });
+    const cards = await prisma.card.findMany({
+      where: { card_set_id: id },
+    });
+
+    return NextResponse.json({ ...set, cards: cards }, { status: 200 });
   } catch (error) {
     console.error("Error in POST /fetchSets:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

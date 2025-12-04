@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 export default function Home() {
-  // State for the questions
+  const router = useRouter();
 
   async function handleClick(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -31,8 +33,8 @@ export default function Home() {
       const result = await response.json();
       console.log("Response:", result);
 
-      // setQuestions(result.response);
-      // NOTE CHANGE THIS TO RECEIVE A SET ID AND REDIRECT TO /id PAGE
+      // Go to the flashcard page
+      router.push(`/${result.id}`);
     } catch (error) {
       console.error("Error:", error);
     }

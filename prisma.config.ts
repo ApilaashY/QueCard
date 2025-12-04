@@ -1,6 +1,11 @@
 import { defineConfig, env } from "prisma/config";
+import { config } from "dotenv";
+import { existsSync } from "fs";
 
 // Load .env.local file only if it exists (local development)
+if (existsSync(".env.local")) {
+  config({ path: ".env.local" });
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -8,6 +13,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    url: env("DIRECT_URL"),
   },
 });

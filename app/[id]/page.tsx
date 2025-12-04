@@ -3,16 +3,18 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchCardSet, Flashcard } from "@/lib/reduxStore";
+import { fetchCardSet, FlashCard } from "@/lib/reduxStore";
 
 export default function CardSet() {
   const params = useParams();
-  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [flashcards, setFlashcards] = useState<FlashCard[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadCardSet() {
-      setFlashcards(await fetchCardSet(params.id as string));
+      setFlashcards(
+        ((await fetchCardSet(params.id as string)) ?? { cards: [] }).cards
+      );
 
       setLoading(false);
     }

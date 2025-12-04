@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     console.log("Checking if PDF already processed:", pdfHash);
 
     // Check if PDF already exists in database
-    const existingPdf = await prisma.cardSets.findUnique({
+    const existingPdf = await prisma.card_sets.findUnique({
       where: { pdf_hash: pdfHash },
     });
 
@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
       console.log("Found existing PDF in database");
       return NextResponse.json({
         success: true,
-        response: existingPdf.flashcards,
         fileName: pdfFile.name,
         cached: true,
+        id: existingPdf.id,
       });
     }
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction:
-        "You will be given a PDF document to analyze and generate questions for. Only respond with flash card questions based on the content, then a newline character and then the answer to the question. Each question seperated with a new line character.",
+        "You will be given a PDF document to analyze and generate questions for. Only respond with flash card questions based on the content, then a newline character and then the answer to the question. Each question and answer separated with 2 new line characters.",
     });
 
     // Use streaming for faster response
@@ -95,16 +95,28 @@ export async function POST(request: NextRequest) {
 
     // Store in database for future use
     try {
-      await prisma.cardSets.create({
+      const createdSet = await prisma.card_sets.create({
         data: {
           pdf_hash: pdfHash,
           file_name: pdfFile.name,
           title: text.split("\n")[0], // First line as title
-          flashcards: text.split("\n").slice(1).join("\n"), // Skip the title line
           file_size: pdfFile.size,
           owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93", // Static user for now
         },
       });
+
+      for (const line of text.split("\n").slice(1).join("\n").split("\n\n")) {
+        const [question, answer] = line.split("\n");
+        if (question && answer) {
+          await prisma.card.create({
+            data: {
+              card_set_id: createdSet.id,
+              question: question.trim(),
+              answer: answer.trim(),
+            },
+          });
+        }
+      }
     } catch (insertError) {
       console.error("Error storing in database:", insertError);
       // Continue anyway, just won't be cached
@@ -112,9 +124,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      response: text,
       fileName: pdfFile.name,
       cached: false,
+      id: pdfHash,
     });
   } catch (error) {
     console.error("Error processing PDF:", error);

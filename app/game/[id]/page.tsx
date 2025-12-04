@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchCardSet } from "@/lib/reduxStore";
+import { CardSet, fetchCardSet } from "@/lib/reduxStore";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -17,7 +17,9 @@ export default function FlashcardGame() {
 
   useEffect(() => {
     async function getFlashcards() {
-      setFlashcards(await fetchCardSet(params.id as string));
+      setFlashcards(
+        ((await fetchCardSet(params.id as string)) ?? { cards: [] }).cards
+      );
     }
 
     getFlashcards();
@@ -99,7 +101,7 @@ export default function FlashcardGame() {
               transform: "rotateY(180deg)",
             }}
           >
-            <div className="text-sm font-semibold text-(--accent) mb-4">
+            <div className="text-sm font-semibold text-(--secondary) mb-4">
               ANSWER
             </div>
             <p className="text-2xl text-center text-white">

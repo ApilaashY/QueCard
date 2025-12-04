@@ -1,13 +1,11 @@
 "use client";
 
-import { fetchCardSet, Flashcard } from "@/lib/reduxStore";
+import { fetchCardSet, CardSet } from "@/lib/reduxStore";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function EditCardSet() {
-  const [flashcards, setFlashcards] = useState<Flashcard[] | undefined>(
-    undefined
-  );
+  const [flashcards, setFlashcards] = useState<CardSet | undefined>(undefined);
   const params = useParams();
 
   useEffect(() => {
@@ -30,38 +28,46 @@ export default function EditCardSet() {
 
   return (
     <div className="flex flex-row justify-center items-center min-h-screen p-4 gap-4 flex-wrap">
-      {flashcards.length === 0 ? (
+      {flashcards.cards.length === 0 ? (
         <p className="text-xl ">No flashcards found to edit</p>
       ) : (
         <>
-          {flashcards.map((card, index) => (
-            <div key={index} className="p-4 border rounded w-full max-w-lg">
-              <h2 className="text-2xl font-bold mb-2">Card {index + 1}</h2>
-              <div className="mb-2">
-                <label className="block font-semibold mb-1">Question:</label>
-                <input
-                  type="text"
-                  value={card.question}
-                  onChange={(e) => {
-                    const newSet = [...flashcards];
-                    newSet[index].question = e.target.value;
-                    setFlashcards(newSet);
+          {flashcards.cards.map((card, index) => (
+            <div
+              className="w-xl cursor-pointer"
+              style={{ perspective: "1000px" }}
+              key={index}
+            >
+              <div
+                className=" transition-transform duration-500"
+                style={{
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                {/* Front of card (Question) */}
+                <div
+                  className=" bg-white rounded-2xl shadow-2xl p-8 flex flex-col justify-center items-center"
+                  style={{
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
                   }}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold mb-1">Answer:</label>
-                <input
-                  type="text"
-                  value={card.answer}
-                  onChange={(e) => {
-                    const newSet = [...flashcards];
-                    newSet[index].answer = e.target.value;
-                    setFlashcards(newSet);
-                  }}
-                  className="w-full p-2 border rounded"
-                />
+                >
+                  <div className="text-sm font-semibold text-(--secondary) mb-2">
+                    QUESTION
+                  </div>
+                  <textarea
+                    className="text-2xl text-center text-gray-800 mb-6 rounded-lg border border-gray-300 p-2 w-4/5 multi-line-input"
+                    value={card.question}
+                  />
+
+                  <div className="text-sm font-semibold text-(--secondary) mb-2">
+                    ANSWER
+                  </div>
+                  <textarea
+                    className="text-2xl text-center text-gray-800 mb-6 rounded-lg border border-gray-300 p-2 w-4/5 multi-line-input"
+                    value={card.answer}
+                  />
+                </div>
               </div>
             </div>
           ))}
