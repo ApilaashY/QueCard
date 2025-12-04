@@ -13,7 +13,7 @@ export async function POST() {
     const user = await prisma.users.findUnique({
       where: { id: "568f5335-711e-4a36-92f2-dc5e0c1b1a93" },
     });
-    
+
     if (!user) {
       return new NextResponse("User not found", { status: 404 });
     }
@@ -30,7 +30,9 @@ export async function POST() {
   } catch (error) {
     console.error("Error in POST /fetchSets:", error);
     return new NextResponse(
-      `Internal Server Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Internal Server Error: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
       { status: 500 }
     );
   }
