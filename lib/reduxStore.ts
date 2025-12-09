@@ -19,12 +19,48 @@ const cardSets = createSlice({
     addCardSet: (state, action: { payload: { id: string; data: CardSet } }) => {
       state[action.payload.id] = action.payload.data;
     },
+    updateCardValue: (
+      state,
+      action: {
+        payload: {
+          setId: string;
+          cardId: string;
+          field: "question" | "answer";
+          newValue: string;
+        };
+      }
+    ) => {
+      const { setId, cardId, field, newValue } = action.payload;
+      const cardSet = state[setId];
+      if (cardSet) {
+        const card = cardSet.cards.find((c) => c.id === cardId);
+        if (card) {
+          card[field] = newValue;
+        }
+      }
+    },
+  },
+});
+
+const sendUpdates = createSlice({
+  name: "SendUpdates",
+  initialState: {
+    sendUpdates: true,
+  },
+  reducers: {
+    toggleSendUpdates: (state) => {
+      state.sendUpdates = !state.sendUpdates;
+    },
+    setSendUpdates: (state, action: { payload: boolean }) => {
+      state.sendUpdates = action.payload;
+    },
   },
 });
 
 export const store = configureStore({
   reducer: {
     cardSets: cardSets.reducer,
+    sendUpdates: sendUpdates.reducer,
   },
 });
 
@@ -80,25 +116,8 @@ export async function updateFlashcard(
   field: "question" | "answer",
   newValue: string
 ) {
-  const state = store.getState();
-  const currentSet = state.cardSets[setId];
-  const cardIndex = currentSet?.cards.findIndex((card) => card.id === cardId);
-  if (!currentSet || cardIndex < 0 || cardIndex >= currentSet.cards.length) {
-    console.error("Invalid set ID or card index");
-    return;
-  }
-
-  const updatedSet = [...currentSet.cards];
-  updatedSet[cardIndex] = {
-    ...updatedSet[cardIndex],
-    [field]: newValue,
-  };
-
   store.dispatch(
-    cardSets.actions.addCardSet({
-      id: setId,
-      data: { ...currentSet, cards: updatedSet },
-    })
+    cardSets.actions.updateCardValue({ setId, cardId, field, newValue })
   );
 
   // Update the database via API route

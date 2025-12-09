@@ -7,8 +7,8 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
-// Use DIRECT_URL for adapter connection (no pgbouncer)
-const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+// Use DATABASE_URL for runtime queries (connection pooler)
+const connectionString = process.env.DATABASE_URL;
 
 // Reuse the pool in development to avoid creating too many connections
 const pool =

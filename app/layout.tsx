@@ -84,7 +84,7 @@ export default function RootLayout({
                       <Link
                         href={`/${set.id}`}
                         key={set.id}
-                        className={`px-4 py-2 rounded cursor-pointer ${
+                        className={`px-4 py-2 rounded cursor-pointer flex flex-col ${
                           params.id === set.id && "bg-gray-800"
                         }`}
                       >
