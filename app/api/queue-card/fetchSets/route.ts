@@ -2,10 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function POST() {
+  console.log("fetchSets POST handler called");
+  
   // Debug: Check if DATABASE_URL exists
   if (!process.env.DATABASE_URL) {
     console.error("DATABASE_URL is not set");
-    return new NextResponse("Database configuration error", { status: 500 });
+    return NextResponse.json(
+      { error: "Database configuration error" },
+      { status: 500 }
+    );
   }
 
   try {
@@ -15,7 +20,7 @@ export async function POST() {
     });
 
     if (!user) {
-      return new NextResponse("User not found", { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const sets = await prisma.card_sets.findMany({
@@ -29,10 +34,11 @@ export async function POST() {
     return NextResponse.json({ sets }, { status: 200 });
   } catch (error) {
     console.error("Error in POST /fetchSets:", error);
-    return new NextResponse(
-      `Internal Server Error: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
+    return NextResponse.json(
+      {
+        error: "Internal Server Error",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
