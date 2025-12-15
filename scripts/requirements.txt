@@ -1,0 +1,2 @@
+# Python dependencies for PDF processing with Docling
+docling>=1.0.0

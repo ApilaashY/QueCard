@@ -13,9 +13,13 @@
     "test:coverage": "jest --coverage",
     "prepare": "husky || true",
     "db:pull": "prisma db pull",
+    "db:pull:server": "dotenv -e .env.server -- prisma db pull",
     "db:push": "prisma db push",
+    "db:push:server": "dotenv -e .env.server -- prisma db push",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:generate:server": "dotenv -e .env.server -- prisma generate",
+    "db:studio": "prisma studio",
+    "db:studio:server": "dotenv -e .env.server -- prisma studio"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -43,12 +47,13 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^20",
+    "@types/node": "^20.19.27",
     "@types/pg": "^8.15.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
+    "dotenv-cli": "^7.4.2",
     "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",

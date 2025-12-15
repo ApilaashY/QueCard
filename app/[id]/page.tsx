@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchCardSet, FlashCard } from "@/lib/reduxStore";
@@ -9,18 +9,24 @@ export default function CardSet() {
   const params = useParams();
   const [flashcards, setFlashcards] = useState<FlashCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     async function loadCardSet() {
-      setFlashcards(
-        ((await fetchCardSet(params.id as string)) ?? { cards: [] }).cards
-      );
+      const cards = await fetchCardSet(params.id as string);
+
+      if (!cards) {
+        router.push("/");
+        return;
+      } else {
+        setFlashcards(cards.cards);
+      }
 
       setLoading(false);
     }
 
     loadCardSet();
-  }, [params.id]);
+  }, [params.id, router]);
 
   if (loading) {
     return (

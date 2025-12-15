@@ -2,14 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
-
-function chunkText(text: string, size = 600) {
-  const out = [];
-  for (let i = 0; i < text.length; i += size) {
-    out.push(text.substring(i, i + size));
-  }
-  return out;
-}
+import {
+  processPdfWithDocling,
+  prepareChunksForGemini,
+} from "@/lib/docling";
 
 export async function POST(request: NextRequest) {
   // try {
@@ -55,45 +51,51 @@ export async function POST(request: NextRequest) {
   // Initialize Gemini
   const genAI = new GoogleGenerativeAI(apiKey);
   const embedder = genAI.getGenerativeModel({ model: "text-embedding-004" });
-  const fileManager = new (
-    await import("@google/generative-ai/server")
-  ).GoogleAIFileManager(apiKey);
 
-  // Save to temp file for upload
+  // Save to temp file for Docling processing
   const fs = await import("fs");
   const path = await import("path");
   const os = await import("os");
   const tempPath = path.join(os.tmpdir(), pdfFile.name);
   fs.writeFileSync(tempPath, buffer);
 
-  // Upload PDF to Gemini to extract text
-  const uploadResult = await fileManager.uploadFile(tempPath, {
-    mimeType: "application/pdf",
-    displayName: pdfFile.name,
-  });
+  console.log("Processing PDF with Docling...");
 
-  // Extract text content from PDF using Gemini
-  const extractionModel = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-  });
-  const extractionResult = await extractionModel.generateContent([
-    {
-      fileData: {
-        fileUri: uploadResult.file.uri,
-        mimeType: uploadResult.file.mimeType,
+  // Process PDF with Docling to get structured chunks
+  let doclingResult;
+  try {
+    doclingResult = await processPdfWithDocling(tempPath);
+
+    if (!doclingResult.success || !doclingResult.chunks) {
+      throw new Error(
+        doclingResult.error || "Failed to process PDF with Docling"
+      );
+    }
+
+    console.log(
+      `Docling extracted ${doclingResult.chunks.length} structured chunks`
+    );
+  } catch (doclingError) {
+    console.error("Docling processing failed:", doclingError);
+    // Clean up temp file
+    fs.unlinkSync(tempPath);
+    return NextResponse.json(
+      {
+        error: "Failed to process PDF with Docling",
+        details: (doclingError as Error).message,
       },
-    },
-    {
-      text: "Extract all text content from this PDF document. Return only the text, no commentary.",
-    },
-  ]);
+      { status: 500 }
+    );
+  }
 
-  const raw = extractionResult.response.text();
-  const chunks = chunkText(raw);
+  // Prepare chunks for better processing
+  const chunks = prepareChunksForGemini(doclingResult.chunks);
+  console.log(`Prepared ${chunks.length} chunks for Gemini processing`);
 
   // Clean up temp file
   fs.unlinkSync(tempPath);
 
+  // Create embeddings and store in vector DB
   const embeddingPromises = chunks.map(
     async (chunk) => await embedder.embedContent(chunk)
   );
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     if (!sanitizedChunk) continue; // Skip empty chunks
 
-    // Use raw SQL for vector insertion since Prisma doesn't support vector type directly
+    // Store chunks with embeddings in vector DB
     await prisma.$executeRaw`
         INSERT INTO documents (content, embedding)
         VALUES (${sanitizedChunk}, ${`[${embeddings[i].embedding.values.join(
@@ -114,12 +116,12 @@ export async function POST(request: NextRequest) {
       `;
   }
 
-  console.log("Ingestion completed.");
 
-  // 2. Retrieve similar documents
-  const context = chunks.join("\n\n") ?? "";
+  // Use only the retrieved relevant chunks as context
+  const context = chunks.slice(0, 500).join("\n\n");
+  console.log("Context size:", context.length, "characters");
 
-  // 3. Pass context + query to Gemini
+  // 3. Pass limited, relevant context to Gemini
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     systemInstruction:
@@ -136,8 +138,6 @@ ${context}
   const result = await model.generateContent(prompt);
   const text = result.response.text();
 
-  console.log("Generated flashcards text:", text);
-
   // Store in database for future use
   try {
     const createdSet = await prisma.card_sets.create({
@@ -151,7 +151,6 @@ ${context}
     });
 
     for (const [index, line] of text.split("\n").slice(1).join("\n").split("\n\n").entries()) {
-      console.log("Processing line for card:", line);
       const [question, answer] = line.split("\n");
       if (question && answer) {
         await prisma.card.create({

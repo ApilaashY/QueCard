@@ -5,8 +5,8 @@ export async function POST(request: NextRequest) {
   const { id } = await request.json();
 
   // Check if id exists
-  if (!id) {
-    return new NextResponse("ID is required", { status: 400 });
+  if (!id || typeof id !== "string") {
+    return new NextResponse("ID is required or invalid", { status: 400 });
   }
 
   try {
@@ -18,9 +18,12 @@ export async function POST(request: NextRequest) {
       where: { card_set_id: id },
     });
 
+    if (!set) {
+      return new NextResponse("Card set not found", { status: 404 });
+    }
+
     return NextResponse.json({ ...set, cards: cards }, { status: 200 });
-  } catch (error) {
-    console.error("Error in POST /fetchSets:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+  } catch (_) {
+    return new NextResponse("Can't find the card set or cards", { status: 500 });
   }
 }
