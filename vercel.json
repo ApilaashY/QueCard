@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/process-pdf.py": {
+      "runtime": "python3.9"
+    }
+  }
+}

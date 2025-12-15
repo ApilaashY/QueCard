@@ -86,6 +86,62 @@ async function ensureVenvSetup(): Promise<string> {
 export async function processPdfWithDocling(
   pdfPath: string
 ): Promise<DoclingResult> {
+  // Check if running in Vercel (production/serverless environment)
+  const isVercel = process.env.VERCEL === '1';
+  
+  if (isVercel) {
+    // Use Vercel Python serverless function
+    return await processPdfWithVercelFunction(pdfPath);
+  } else {
+    // Use local Python subprocess
+    return await processPdfWithLocalPython(pdfPath);
+  }
+}
+
+/**
+ * Process PDF using Vercel Python serverless function
+ */
+async function processPdfWithVercelFunction(pdfPath: string): Promise<DoclingResult> {
+  try {
+    // Read PDF file and convert to base64
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    const pdfBase64 = pdfBuffer.toString('base64');
+    
+    // Call Vercel Python function
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+    
+    const response = await fetch(`${baseUrl}/api/process-pdf`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ pdf_base64: pdfBase64 }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      return {
+        success: false,
+        error: error.error || 'Failed to process PDF',
+      };
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to process PDF with Vercel function: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Process PDF using local Python subprocess (for development)
+ */
+async function processPdfWithLocalPython(pdfPath: string): Promise<DoclingResult> {
   // Ensure venv is set up and get Python path
   let pythonPath: string;
   try {
