@@ -99,7 +99,7 @@ export async function processPdfWithDocling(
 }
 
 /**
- * Process PDF using Vercel Python serverless function
+ * Process PDF using external Python service (Railway, Render, etc.)
  */
 async function processPdfWithVercelFunction(pdfPath: string): Promise<DoclingResult> {
   try {
@@ -107,12 +107,17 @@ async function processPdfWithVercelFunction(pdfPath: string): Promise<DoclingRes
     const pdfBuffer = fs.readFileSync(pdfPath);
     const pdfBase64 = pdfBuffer.toString('base64');
     
-    // Call Vercel Python function
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
+    // Use external Python service
+    const pythonServiceUrl = process.env.PDF_PROCESSING_SERVICE_URL;
     
-    const response = await fetch(`${baseUrl}/api/process-pdf`, {
+    if (!pythonServiceUrl) {
+      return {
+        success: false,
+        error: 'PDF_PROCESSING_SERVICE_URL environment variable not set',
+      };
+    }
+    
+    const response = await fetch(`${pythonServiceUrl}/process-pdf`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -124,7 +129,7 @@ async function processPdfWithVercelFunction(pdfPath: string): Promise<DoclingRes
       const error = await response.json();
       return {
         success: false,
-        error: error.error || 'Failed to process PDF',
+        error: error.error || error.detail || 'Failed to process PDF',
       };
     }
     
@@ -133,7 +138,7 @@ async function processPdfWithVercelFunction(pdfPath: string): Promise<DoclingRes
   } catch (error) {
     return {
       success: false,
-      error: `Failed to process PDF with Vercel function: ${(error as Error).message}`,
+      error: `Failed to process PDF with external service: ${(error as Error).message}`,
     };
   }
 }
