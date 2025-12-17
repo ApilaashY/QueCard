@@ -26,7 +26,8 @@ model card_sets {
   file_size  Int?
   created_at DateTime?   @default(now()) @db.Timestamptz(6)
   owner      String?     @db.Uuid
-  title      String      @default("")
+  title      String?     @default("")
+  status     Int
   card       card[]
   users      users?      @relation(fields: [owner], references: [id], onDelete: NoAction, onUpdate: NoAction)
   documents  documents[]

@@ -48,6 +48,26 @@ export async function POST(request: NextRequest) {
       id: existingPdf.id,
     });
   }
+
+  let createdSet;
+  try {
+  // Add card set to database to prevent reprocessing while we work
+    createdSet = await prisma.card_sets.create({
+      data: {
+        pdf_hash: pdfHash,
+        file_name: pdfFile.name,
+        file_size: pdfFile.size,
+        owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93", // Static user for now
+        status: 1, // Processing
+      },
+    });
+  } catch (_) {
+    return NextResponse.json(
+      { error: "Failed to create initial card set entry" },
+      { status: 500 }
+    );
+  }
+
   // Initialize Gemini
   const genAI = new GoogleGenerativeAI(apiKey);
   const embedder = genAI.getGenerativeModel({ model: "text-embedding-004" });
@@ -125,15 +145,15 @@ ${context}
 
   // Store in database for future use
   try {
-    const createdSet = await prisma.card_sets.create({
-      data: {
-        pdf_hash: pdfHash,
-        file_name: pdfFile.name,
+    await prisma.card_sets.update({
+      where: { id: createdSet.id },
+      data: {  file_name: pdfFile.name,
         title: text.split("\n")[0], // First line as title
         file_size: pdfFile.size,
-        owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93", // Static user for now
-      },
-    });
+        owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93",
+        status: 2
+    }});
+  
 
     for (let i = 0; i < chunks.length; i++) {
     // Sanitize chunk to remove null bytes and other problematic characters
