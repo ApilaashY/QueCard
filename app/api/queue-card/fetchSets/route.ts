@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function POST() {
-  console.log("fetchSets POST handler called");
   
   // Debug: Check if DATABASE_URL exists
   if (!process.env.DATABASE_URL) {

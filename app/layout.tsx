@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Provider } from "react-redux";
 import { store } from "@/lib/reduxStore";
 
@@ -31,6 +31,7 @@ export default function RootLayout({
   const [sets, setSets] = useState<{ id: string; title: string }[] | null>(
     null
   );
+  const router = useRouter();
   const loading = useRef(false);
   const params = useParams();
 
@@ -56,6 +57,33 @@ export default function RootLayout({
     fetchSets();
   }, [sets]);
 
+  async function deleteSet() {
+    if (!params.id) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/deleteSet`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id: params.id }),
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        // Remove the deleted set from state
+        setSets((prevSets) =>
+          prevSets ? prevSets.filter((set) => set.id !== params.id) : null
+        );
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Error deleting card set:", error);
+    }
+  }
+
   return (
     <html lang="en">
       <body
@@ -64,7 +92,7 @@ export default function RootLayout({
         <div className="max-w-screen max-h-screen">
           <main className="flex min-h-screen flex-row justify-between gap-6">
             {/* Side Bar */}
-            <div className="flex flex-col bg-black/30 rounded-lg p-8">
+            <div className="flex flex-col bg-black/30 rounded-lg p-8 max-w-2xl">
               <h1 className="text-4xl font-bold mb-4">QueCard</h1>
 
               <div className="flex flex-col gap-2">
@@ -81,15 +109,25 @@ export default function RootLayout({
                 <div>
                   {sets &&
                     sets.map((set) => (
-                      <Link
-                        href={`/${set.id}`}
+                      <div
                         key={set.id}
-                        className={`px-4 py-2 rounded cursor-pointer flex flex-col ${
+                        className={`rounded cursor-pointer flex gap-2 ${
                           params.id === set.id && "bg-gray-800"
                         }`}
                       >
-                        {set.title}
-                      </Link>
+                        <Link href={`/${set.id}`} className="px-4 py-2">
+                          {set.title}
+                        </Link>
+                        <button
+                          className={`${
+                            params.id === set.id &&
+                            "bg-gray-900 px-4 py-2 cursor-pointer"
+                          }`}
+                          onClick={deleteSet}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     ))}
                 </div>
               </div>

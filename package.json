@@ -16,6 +16,7 @@
     "db:pull:server": "dotenv -e .env.server -- prisma db pull",
     "db:push": "prisma db push",
     "db:push:server": "dotenv -e .env.server -- prisma db push",
+    "db:reset:server": "dotenv -e .env.server -- prisma db push --force-reset",
     "db:generate": "prisma generate",
     "db:generate:server": "dotenv -e .env.server -- prisma generate",
     "db:studio": "prisma studio",

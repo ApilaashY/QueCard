@@ -9,7 +9,6 @@ export default function Home() {
 
   async function handleClick(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    console.log("Button clicked");
 
     const formData = new FormData(e.currentTarget);
     const pdfFile = formData.get("pdf") as File;
@@ -23,7 +22,6 @@ export default function Home() {
     formDataToSend.append("pdf", pdfFile);
 
     try {
-      console.log("Sending request to /api/queue-card/generate");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/generate`,
         {
@@ -33,7 +31,6 @@ export default function Home() {
       );
 
       const result = await response.json();
-      console.log("Response:", result);
 
       // Go to the flashcard page
       router.push(`/${result.id}`);

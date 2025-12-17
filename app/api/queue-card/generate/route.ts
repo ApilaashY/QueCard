@@ -101,21 +101,6 @@ export async function POST(request: NextRequest) {
   );
   const embeddings = await Promise.all(embeddingPromises);
 
-  for (let i = 0; i < chunks.length; i++) {
-    // Sanitize chunk to remove null bytes and other problematic characters
-    const sanitizedChunk = chunks[i].replace(/\x00/g, "").trim();
-
-    if (!sanitizedChunk) continue; // Skip empty chunks
-
-    // Store chunks with embeddings in vector DB
-    await prisma.$executeRaw`
-        INSERT INTO documents (content, embedding)
-        VALUES (${sanitizedChunk}, ${`[${embeddings[i].embedding.values.join(
-      ","
-    )}]`}::vector)
-      `;
-  }
-
 
   // Use only the retrieved relevant chunks as context
   const context = chunks.slice(0, 500).join("\n\n");
@@ -149,6 +134,21 @@ ${context}
         owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93", // Static user for now
       },
     });
+
+    for (let i = 0; i < chunks.length; i++) {
+    // Sanitize chunk to remove null bytes and other problematic characters
+    const sanitizedChunk = chunks[i].replace(/\x00/g, "").trim();
+
+    if (!sanitizedChunk) continue; // Skip empty chunks
+
+    // Store chunks with embeddings in vector DB
+    await prisma.$executeRaw`
+        INSERT INTO documents (card_set_id, content, embedding)
+        VALUES (${createdSet.id}, ${sanitizedChunk}, ${`[${embeddings[i].embedding.values.join(
+      ","
+    )}]`}::vector)
+      `;
+  }
 
     for (const [index, line] of text.split("\n").slice(1).join("\n").split("\n\n").entries()) {
       const [question, answer] = line.split("\n");
