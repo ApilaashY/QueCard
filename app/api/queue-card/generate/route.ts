@@ -3,9 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import {
-  processPdfWithDocling,
+  processPdf,
   prepareChunksForGemini,
-} from "@/lib/docling";
+} from "@/lib/pdf-processer";
 
 export async function POST(request: NextRequest) {
   // try {
@@ -61,10 +61,10 @@ export async function POST(request: NextRequest) {
 
   console.log("Processing PDF with Docling...");
 
-  // Process PDF with Docling to get structured chunks
+  // Process PDF with to get structured chunks
   let doclingResult;
   try {
-    doclingResult = await processPdfWithDocling(tempPath);
+    doclingResult = await processPdf(tempPath);
 
     if (!doclingResult.success || !doclingResult.chunks) {
       throw new Error(
