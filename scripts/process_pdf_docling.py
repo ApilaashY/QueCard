@@ -1,33 +1,36 @@
 #!/usr/bin/env python3
 """
-Process PDF files using Docling to extract structured content.
+Process PDF files using PyMuPDF to extract structured content.
 """
 import sys
 import json
-import re
 from pathlib import Path
 from typing import List, Dict, Any
 try:
-    from docling.document_converter import DocumentConverter
-    import docling.utils.model_downloader
+    import fitz  # PyMuPDF
 except ImportError:
     print(json.dumps({
-        "error": "Docling not installed. Install with: pip install docling"
+        "error": "PyMuPDF not installed. Install with: pip install pymupdf"
     }))
     sys.exit(1)
 
 
 def process_pdf(pdf_path: str):
-    converter = DocumentConverter()
-    docling.utils.model_downloader.download_models()
-    result = converter.convert(pdf_path)
+    # Open the PDF
+    doc = fitz.open(pdf_path)
     
-    # Export to markdown
-    markdown_content = result.document.export_to_markdown()
+    # Extract text from all pages
+    full_text = ""
+    for page in doc:
+        full_text += page.get_text()
     
-    # Split markdown into chunks (by paragraphs/sections)
+    # Get page count before closing
+    num_pages = len(doc)
+    doc.close()
+    
+    # Split text into chunks (by paragraphs/sections)
     # Simple split by double newlines for now
-    raw_chunks = markdown_content.split('\n\n')
+    raw_chunks = full_text.split('\n\n')
     
     chunks = []
     for i, chunk_content in enumerate(raw_chunks):
@@ -45,7 +48,7 @@ def process_pdf(pdf_path: str):
         "success": True,
         "chunks": chunks,
         "metadata": {
-            "num_pages": len(result.document.pages) if hasattr(result.document, 'pages') else 0,
+            "num_pages": num_pages,
             "num_chunks": len(chunks)
         }
     }

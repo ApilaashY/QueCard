@@ -52,14 +52,14 @@ async function ensureVenvSetup(): Promise<string> {
     }
   }
 
-  // Check if requirements are installed by checking for docling
+  // Check if requirements are installed by checking for pymupdf
   const checkInstalled = isWindows
-    ? `"${venvPython}" -c "import docling"`
-    : `"${venvPython}" -c "import docling"`;
+    ? `"${venvPython}" -c "import fitz"`
+    : `"${venvPython}" -c "import fitz"`;
 
   try {
     await execAsync(checkInstalled);
-    console.log("Docling already installed in venv");
+    console.log("PyMuPDF already installed in venv");
   } catch {
     console.log("Installing requirements...");
     
@@ -79,68 +79,16 @@ async function ensureVenvSetup(): Promise<string> {
 }
 
 /**
- * Process a PDF file using Docling to extract structured content
+ * Process a PDF file using PyMuPDF to extract structured content
  * @param pdfPath - Absolute path to the PDF file
  * @returns Promise with structured chunks
  */
 export async function processPdfWithDocling(
   pdfPath: string
 ): Promise<DoclingResult> {
-  // Check if running in Vercel (production/serverless environment)
-  const isVercel = process.env.VERCEL === '1';
-  
-  if (isVercel) {
-    // Use Vercel Python serverless function
-    return await processPdfWithVercelFunction(pdfPath);
-  } else {
-    // Use local Python subprocess
-    return await processPdfWithLocalPython(pdfPath);
-  }
-}
 
-/**
- * Process PDF using external Python service (Railway, Render, etc.)
- */
-async function processPdfWithVercelFunction(pdfPath: string): Promise<DoclingResult> {
-  try {
-    // Read PDF file and convert to base64
-    const pdfBuffer = fs.readFileSync(pdfPath);
-    const pdfBase64 = pdfBuffer.toString('base64');
-    
-    // Use external Python service
-    const pythonServiceUrl = process.env.PDF_PROCESSING_SERVICE_URL;
-    
-    if (!pythonServiceUrl) {
-      return {
-        success: false,
-        error: 'PDF_PROCESSING_SERVICE_URL environment variable not set',
-      };
-    }
-    
-    const response = await fetch(`${pythonServiceUrl}/process-pdf`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ pdf_base64: pdfBase64 }),
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      return {
-        success: false,
-        error: error.error || error.detail || 'Failed to process PDF',
-      };
-    }
-    
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    return {
-      success: false,
-      error: `Failed to process PDF with external service: ${(error as Error).message}`,
-    };
-  }
+    return await processPdfWithLocalPython(pdfPath);
+  
 }
 
 /**
@@ -181,7 +129,7 @@ async function processPdfWithLocalPython(pdfPath: string): Promise<DoclingResult
     pythonProcess.on("close", (code) => {
       if (code !== 0) {
         console.error("Python script error:", stderr);
-        reject(new Error(`Docling processing failed: ${stderr}`));
+        reject(new Error(`PyMuPDF processing failed: ${stderr}`));
         return;
       }
 
@@ -189,7 +137,7 @@ async function processPdfWithLocalPython(pdfPath: string): Promise<DoclingResult
         const result = JSON.parse(stdout);
         resolve(result);
       } catch (error) {
-        reject(new Error(`Failed to parse Docling output: ${error}`));
+        reject(new Error(`Failed to parse PyMuPDF output: ${error}`));
       }
     });
 
