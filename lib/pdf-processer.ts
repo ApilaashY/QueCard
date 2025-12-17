@@ -1,12 +1,5 @@
-import { PDFParse } from "pdf-parse";
+import { PdfReader } from "pdfreader";
 import fs from "fs/promises";
-import path from "path";
-
-// Configure worker for Node.js environment
-if (typeof window === 'undefined') {
-  const workerPath = path.join(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
-  PDFParse.setWorker(workerPath);
-}
 
 export interface DoclingChunk {
   content: string;
@@ -29,7 +22,7 @@ export interface DoclingResult {
 }
 
 /**
- * Process a PDF file using pdf-parse to extract structured content
+ * Process a PDF file using pdfreader to extract structured content
  * @param pdfPath - Absolute path to the PDF file
  * @returns Promise with structured chunks
  */
@@ -38,37 +31,69 @@ export async function processPdf(
 ): Promise<DoclingResult> {
   try {
     // Read the PDF file
-    const dataBuffer = await fs.readFile(pdfPath);
+    const buffer = await fs.readFile(pdfPath);
     
-    // Parse the PDF
-    const parser = new PDFParse({ data: dataBuffer });
-    const data = await parser.getText();
-    
-    // Split text into chunks (by paragraphs/sections)
-    const raw_chunks = data.text.split('\n\n');
-    
-    const chunks: DoclingChunk[] = [];
-    for (let i = 0; i < raw_chunks.length; i++) {
-      const chunk_content = raw_chunks[i].trim();
-      if (chunk_content) {  // Skip empty chunks
-        chunks.push({
-          content: chunk_content,
-          type: "text",
-          metadata: {
-            chunk_index: i
+    return new Promise((resolve) => {
+      const reader = new PdfReader();
+      let currentPage = 0;
+      let maxPage = 0;
+      const pageTexts: Record<number, string[]> = {};
+      
+      reader.parseBuffer(buffer, (err, item) => {
+        if (err) {
+          resolve({
+            success: false,
+            error: `Failed to process PDF: ${err}`
+          });
+          return;
+        }
+        
+        if (!item) {
+          // End of parsing
+          const fullText = Object.keys(pageTexts)
+            .sort((a, b) => Number(a) - Number(b))
+            .map(page => pageTexts[Number(page)].join(' '))
+            .join('\n\n');
+          
+          // Split text into chunks (by paragraphs/sections)
+          const raw_chunks = fullText.split('\n\n');
+          
+          const chunks: DoclingChunk[] = [];
+          for (let i = 0; i < raw_chunks.length; i++) {
+            const chunk_content = raw_chunks[i].trim();
+            if (chunk_content) {  // Skip empty chunks
+              chunks.push({
+                content: chunk_content,
+                type: "text",
+                metadata: {
+                  chunk_index: i
+                }
+              });
+            }
           }
-        });
-      }
-    }
-    
-    return {
-      success: true,
-      chunks,
-      metadata: {
-        num_pages: data.pages.length,
-        num_chunks: chunks.length
-      }
-    };
+          
+          resolve({
+            success: true,
+            chunks,
+            metadata: {
+              num_pages: maxPage + 1,
+              num_chunks: chunks.length
+            }
+          });
+          return;
+        }
+        
+        if (item.page) {
+          currentPage = item.page - 1;
+          maxPage = Math.max(maxPage, currentPage);
+          if (!pageTexts[currentPage]) {
+            pageTexts[currentPage] = [];
+          }
+        } else if (item.text) {
+          pageTexts[currentPage]?.push(item.text);
+        }
+      });
+    });
   } catch (error) {
     return {
       success: false,
