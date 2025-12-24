@@ -120,8 +120,9 @@ export default function RootLayout({
                         </Link>
                         <button
                           className={`${
-                            params.id === set.id &&
-                            "bg-gray-900 px-4 py-2 cursor-pointer"
+                            params.id === set.id
+                              ? "bg-gray-900 px-4 py-2 cursor-pointer"
+                              : "hidden"
                           }`}
                           onClick={deleteSet}
                         >

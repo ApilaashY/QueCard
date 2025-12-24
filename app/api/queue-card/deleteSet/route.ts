@@ -10,6 +10,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const set = await prisma.card_sets.findUniqueOrThrow({
+      where: { id: id },
+    });
+
+    // Check if set is being processed
+    if (set.status !== 2) {
+        return new NextResponse("Card set is still being processed, cannot delete", { status: 400 });
+    }
+ } catch (_) {
+    return new NextResponse("Card set not found", { status: 404 });
+  }
+
+  try {
     // Delete in correct order due to foreign key constraints
     await prisma.documents.deleteMany({
       where: { card_set_id: id },

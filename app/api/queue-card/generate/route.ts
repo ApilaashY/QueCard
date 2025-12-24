@@ -62,8 +62,25 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (_) {
+    // Check if another process created it in the meantime
+    const existingPdf = await prisma.card_sets.findUnique({
+      where: { pdf_hash: pdfHash },
+    });
+
+    if (existingPdf) {
+      console.log("Found existing PDF in database after create attempt");
+
+      return NextResponse.json({
+        success: true,
+        fileName: pdfFile.name,
+        cached: true,
+        id: existingPdf.id,
+      });
+    }
+
+    // Otherwise fail
     return NextResponse.json(
-      { error: "Failed to create initial card set entry" },
+      { error: "Failed to create card set in database" },
       { status: 500 }
     );
   }
@@ -171,6 +188,7 @@ ${context}
   }
 
     for (const [index, line] of text.split("\n").slice(1).join("\n").split("\n\n").entries()) {
+
       const [question, answer] = line.split("\n");
       if (question && answer) {
         await prisma.card.create({
@@ -178,7 +196,7 @@ ${context}
             card_set_id: createdSet.id,
             question: question.trim(),
             answer: answer.trim(),
-            order: index
+            order: index/2
           },
         }).catch((cardError) => {
           console.error("Error creating card:", cardError);

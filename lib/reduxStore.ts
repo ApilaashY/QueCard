@@ -1,16 +1,12 @@
 import { configureStore, createSlice } from "@reduxjs/toolkit";
+import type { Prisma } from "@prisma/client";
 
-export interface CardSet {
-  id: string;
-  title: string;
-  cards: FlashCard[];
-}
+// Use Prisma-generated type with included cards
+export type CardSet = Prisma.card_setsGetPayload<{
+  include: { card: true };
+}>;
 
-export interface FlashCard {
-  id: string;
-  question: string;
-  answer: string;
-}
+export type FlashCard = Prisma.cardGetPayload<{}>;
 
 const cardSets = createSlice({
   name: "CardSets",
@@ -33,9 +29,9 @@ const cardSets = createSlice({
       const { setId, cardId, field, newValue } = action.payload;
       const cardSet = state[setId];
       if (cardSet) {
-        const card = cardSet.cards.find((c) => c.id === cardId);
-        if (card) {
-          card[field] = newValue;
+        const cardItem = cardSet.card.find((c) => c.id === cardId);
+        if (cardItem) {
+          cardItem[field] = newValue;
         }
       }
     },
