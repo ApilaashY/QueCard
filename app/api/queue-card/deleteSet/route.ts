@@ -10,14 +10,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const set = await prisma.card_sets.findUniqueOrThrow({
+    const set = await prisma.books.findUniqueOrThrow({
       where: { id: id },
     });
-
-    // Check if set is being processed
-    if (set.status !== 2) {
-        return new NextResponse("Card set is still being processed, cannot delete", { status: 400 });
-    }
  } catch (_) {
     return new NextResponse("Card set not found", { status: 404 });
   }
@@ -32,7 +27,7 @@ export async function POST(request: NextRequest) {
       where: { card_set_id: id },
     });
 
-    await prisma.card_sets.delete({
+    await prisma.books.delete({
       where: { id: id },
     });
 

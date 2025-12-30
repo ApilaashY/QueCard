@@ -2,7 +2,7 @@ import { configureStore, createSlice } from "@reduxjs/toolkit";
 import type { Prisma } from "@prisma/client";
 
 // Use Prisma-generated type with included cards
-export type CardSet = Prisma.card_setsGetPayload<{
+export type CardSet = Prisma.booksGetPayload<{
   include: { card: true };
 }>;
 

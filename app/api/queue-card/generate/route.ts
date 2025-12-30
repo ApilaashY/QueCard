@@ -34,50 +34,15 @@ export async function POST(request: NextRequest) {
 
   console.log("Checking if PDF already processed:", pdfHash);
 
-  // Check if PDF already exists in database
-  const existingPdf = await prisma.card_sets.findUnique({
-    where: { pdf_hash: pdfHash },
-  });
-
-  if (existingPdf) {
-    console.log("Found existing PDF in database");
-    return NextResponse.json({
-      success: true,
-      fileName: pdfFile.name,
-      cached: true,
-      id: existingPdf.id,
-    });
-  }
-
   let createdSet;
   try {
   // Add card set to database to prevent reprocessing while we work
-    createdSet = await prisma.card_sets.create({
+    createdSet = await prisma.books.create({
       data: {
-        pdf_hash: pdfHash,
-        file_name: pdfFile.name,
-        file_size: pdfFile.size,
         owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93", // Static user for now
-        status: 1, // Processing
       },
     });
   } catch (_) {
-    // Check if another process created it in the meantime
-    const existingPdf = await prisma.card_sets.findUnique({
-      where: { pdf_hash: pdfHash },
-    });
-
-    if (existingPdf) {
-      console.log("Found existing PDF in database after create attempt");
-
-      return NextResponse.json({
-        success: true,
-        fileName: pdfFile.name,
-        cached: true,
-        id: existingPdf.id,
-      });
-    }
-
     // Otherwise fail
     return NextResponse.json(
       { error: "Failed to create card set in database" },
@@ -162,14 +127,6 @@ ${context}
 
   // Store in database for future use
   try {
-    await prisma.card_sets.update({
-      where: { id: createdSet.id },
-      data: {  file_name: pdfFile.name,
-        title: text.split("\n")[0], // First line as title
-        file_size: pdfFile.size,
-        owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93",
-        status: 2
-    }});
   
 
     for (let i = 0; i < chunks.length; i++) {

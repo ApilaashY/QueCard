@@ -22,7 +22,7 @@ export async function POST() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const sets = await prisma.card_sets.findMany({
+    const sets = await prisma.books.findMany({
       where: { owner: user.id },
       select: {
         id: true,

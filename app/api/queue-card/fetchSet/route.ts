@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const set = await prisma.card_sets.findUnique({
+    const set = await prisma.books.findUnique({
       where: { id: id },
     });
 
