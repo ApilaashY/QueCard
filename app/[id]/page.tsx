@@ -1,32 +1,124 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { fetchCardSet, FlashCard } from "@/lib/reduxStore";
+import { useEffect, useState, useRef } from "react";
+import { fetchCardSet, Book } from "@/lib/reduxStore";
+import { InlineMath, BlockMath } from "react-katex";
+import "katex/dist/katex.min.css";
 
 export default function CardSet() {
   const params = useParams();
-  const [flashcards, setFlashcards] = useState<FlashCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [book, setBook] = useState<Book | null>(null);
   const router = useRouter();
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadCardSet() {
-      const cards = await fetchCardSet(params.id as string);
-
-      if (!cards) {
+      if (typeof params.id !== "string") {
+        setLoading(false);
         router.push("/");
         return;
-      } else {
-        setFlashcards(cards.cards);
       }
-
+      const fetchedSet = await fetchCardSet(params.id);
+      if (fetchedSet) {
+        setBook(fetchedSet);
+      } else {
+        router.push("/");
+      }
       setLoading(false);
     }
 
     loadCardSet();
   }, [params.id, router]);
+
+  // Scroll chat to bottom when chats change
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [book?.chats]);
+
+  async function uploadDocument(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    // Check if book is loaded
+    if (!book) return;
+
+    const formElement = event.currentTarget;
+    const fileInput = formElement.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    const files = fileInput?.files;
+    if (!files || files.length === 0) return;
+
+    const formData = new FormData();
+    formData.append("bookId", book.id);
+    formData.append("document", files[0]);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/documents/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        // Refresh the card set to show the new document
+        const updatedSet = await fetchCardSet(book.id, true);
+        if (updatedSet) {
+          setBook(updatedSet);
+        }
+      } else {
+        console.error("Failed to upload document");
+      }
+    } catch (error) {
+      console.error("Error uploading document:", error);
+    }
+  }
+
+  async function sendChat(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    // Check if book is loaded
+    if (!book) return;
+
+    const formElement = event.currentTarget;
+    const messageInput = formElement.querySelector(
+      'input[name="textinput"]'
+    ) as HTMLInputElement;
+    const message = messageInput?.value;
+    if (!message) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/ai/sendChat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            bookId: book.id,
+            message,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const updatedSet = await fetchCardSet(book.id, true);
+        if (updatedSet) {
+          setBook(updatedSet);
+        }
+      } else {
+        console.error("Failed to send chat");
+      }
+    } catch (error) {
+      console.error("Error sending chat:", error);
+    }
+  }
 
   if (loading) {
     return (
@@ -39,95 +131,74 @@ export default function CardSet() {
   }
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen p-4">
-      <div className="max-w-4xl w-full">
+    <div className="flex flex-col items-center h-screen p-4">
+      <div className="w-full flex flex-col h-full">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-3">Your Flashcard Set</h1>
-          <p>{flashcards.length} cards ready to study</p>
+        <div className="text-center mb-6">
+          <h1 className="text-4xl font-bold mb-3">{book?.title}</h1>
         </div>
 
         {/* Options Grid */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Play Game Option */}
-          <Link
-            href={`/game/${params.id}`}
-            className="group bg-(--secondary) rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 flex flex-col items-center text-center hover:scale-105 cursor-pointer"
-          >
-            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-indigo-600 transition-colors">
-              <svg
-                className="w-8 h-8 text-indigo-600 group-hover:text-white transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+        <div className="grid md:grid-cols-[1fr_2fr] gap-6 flex-1 min-h-0 w-full">
+          <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0">
+            <h2 className="text-center text-3xl">Documents</h2>
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {book?.documents.map((doc) => (
+                <div key={doc.id} className="p-4 border-b border-gray-700">
+                  <h3 className="text-l font-semibold mb-2">{doc.title}</h3>
+                </div>
+              ))}
             </div>
-            <h3 className="text-xl font-bold mb-2">Play Game</h3>
-            <p className=" text-sm">
-              Study your flashcards and test your knowledge
-            </p>
-          </Link>
+            <form onSubmit={uploadDocument} className="flex flex-row mt-4">
+              <input type="file" />
+              <input
+                type="submit"
+                className="ml-2 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
+                value="Upload"
+              />
+            </form>
+          </div>
 
-          {/* Edit Cards Option */}
-          <Link
-            href={`/edit/${params.id}`}
-            className="group bg-(--secondary) rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 flex flex-col items-center text-center hover:scale-105 cursor-pointer"
-          >
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-600 transition-colors">
-              <svg
-                className="w-8 h-8 text-green-600 group-hover:text-white transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
+          <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0">
+            <h2 className="text-center text-3xl">Chats</h2>
+            <div ref={chatScrollRef} className="flex-1 overflow-y-auto min-h-0">
+              {book?.chats.map((chat, index) => (
+                <div key={index} className="p-4 border-b border-gray-700">
+                  <h3 className="text-l font-semibold mb-5 pl-15 text-right">
+                    {chat.user}
+                  </h3>
+                  <div className="text-l font-semibold mb-1 pr-15">
+                    {chat.ai_response.split(/\$\$|\$/).map((part, i) => {
+                      if (i % 2 === 0) return <span key={i}>{part}</span>;
+                      if (
+                        part.startsWith("\n") ||
+                        chat.ai_response.split(/\$\$|\$/)[i - 1]?.endsWith("\n")
+                      ) {
+                        return <BlockMath key={i} math={part.trim()} />;
+                      }
+                      return <InlineMath key={i} math={part} />;
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-            <h3 className="text-xl font-bold mb-2">Edit Cards</h3>
-            <p className=" text-sm">Manually edit questions and answers</p>
-          </Link>
-
-          {/* Talk to AI Option */}
-          <Link
-            href={`/ai/${params.id}`}
-            className="group bg-(--secondary) rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 flex flex-col items-center text-center hover:scale-105 cursor-pointer"
-          >
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-purple-600 transition-colors">
-              <svg
-                className="w-8 h-8 text-purple-600 group-hover:text-white transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold mb-2">Talk to AI</h3>
-            <p className=" text-sm">Let AI help improve your flashcards</p>
-          </Link>
+            <form
+              onSubmit={sendChat}
+              className="flex flex-row mt-4 justify-center"
+            >
+              <input
+                type="text"
+                placeholder="Message"
+                name="textinput"
+                className="flex-1"
+              />
+              <input
+                type="submit"
+                className="ml-2 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
+                value="Send"
+              />
+            </form>
+          </div>
         </div>
       </div>
     </div>

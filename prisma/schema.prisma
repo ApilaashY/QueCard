@@ -7,18 +7,6 @@ datasource db {
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model card {
-  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  card_set_id String @db.Uuid
-  question    String
-  answer      String
-  order       Int?
-  card_sets   books  @relation(fields: [card_set_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_card_set")
-
-  @@index([card_set_id], map: "idx_card_set_id")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model users {
   id    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   Name  String?
@@ -26,11 +14,12 @@ model users {
 }
 
 model documents {
-  id          BigInt                 @id @default(autoincrement())
-  content     String?
-  embedding   Unsupported("vector")?
-  card_set_id String                 @db.Uuid
-  card_sets   books                  @relation(fields: [card_set_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  book_id         String            @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title           String?
+  document_chunks document_chunks[]
+  books           books             @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "documents_card_set_id_fkey")
 }
 
 model books {
@@ -39,6 +28,25 @@ model books {
   owner      String?     @db.Uuid
   title      String?     @default("")
   users      users?      @relation(fields: [owner], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "card_sets_owner_fkey")
-  card       card[]
+  chats      chats[]
   documents  documents[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model document_chunks {
+  id          BigInt                 @id @default(autoincrement())
+  data        String?
+  document_id String?                @db.Uuid
+  embedding   Unsupported("vector")?
+  documents   documents?             @relation(fields: [document_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model chats {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  user        String?
+  ai_response String?
+  book_id     String?  @db.Uuid
+  books       books?   @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

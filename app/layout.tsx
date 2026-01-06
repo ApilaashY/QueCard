@@ -90,7 +90,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <div className="max-w-screen max-h-screen">
-          <main className="flex min-h-screen flex-row justify-between gap-6">
+          <main className="flex min-h-screen flex-row justify-between gap-3">
             {/* Side Bar */}
             <div className="flex flex-col bg-black/30 rounded-lg p-8 max-w-2xl">
               <h1 className="text-4xl font-bold mb-4">QueCard</h1>

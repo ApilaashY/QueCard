@@ -4,26 +4,52 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   const { id } = await request.json();
 
-  // Check if id exists
   if (!id || typeof id !== "string") {
-    return new NextResponse("ID is required or invalid", { status: 400 });
+    return new NextResponse(
+      JSON.stringify({ error: "Invalid or missing 'id' parameter" }),
+      {
+        status: 400,
+      }
+    );
   }
 
+  // Find book with id
+  let book;
+  let documents;
+  let chats;
   try {
-    const set = await prisma.books.findUnique({
-      where: { id: id },
+    book = await prisma.books.findUnique({
+      where: { id },
     });
-
-    const cards = await prisma.card.findMany({
-      where: { card_set_id: id },
+    documents = await prisma.documents.findMany({
+      where: { book_id: id },
+      select: { id: true, title: true },
     });
-
-    if (!set) {
-      return new NextResponse("Card set not found", { status: 404 });
-    }
-
-    return NextResponse.json({ ...set, cards: cards }, { status: 200 });
-  } catch (_) {
-    return new NextResponse("Can't find the card set or cards", { status: 500 });
+    chats = await prisma.chats.findMany({
+      where: { book_id: id },
+      orderBy: { created_at: "asc" },
+      select: { user: true, ai_response: true, created_at: true },
+    });
+  } catch (error) {
+    console.error("Error fetching book:", error);
+    return new NextResponse(
+      JSON.stringify({ error: "Internal server error" }),
+      {
+        status: 500,
+      }
+    );
   }
+
+  if (!book) {
+    return new NextResponse(JSON.stringify({ error: "Book not found" }), {
+      status: 404,
+    });
+  }
+
+  return new NextResponse(
+    JSON.stringify({ ...book, documents: documents, chats: chats }),
+    {
+      status: 200,
+    }
+  );
 }
