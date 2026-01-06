@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     book = await prisma.books.create({
       data: {
         title: title,
-        owner: "568f5335-711e-4a36-92f2-dc5e0c1b1a93", // Temporary hardcoded user ID
+        owner: "98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb", // Temporary hardcoded user ID
       },
     });
   } catch (error) {
