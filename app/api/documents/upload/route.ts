@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { processPdf } from "@/lib/pdf-processer";
-import { generateEmbeddings } from "@/lib/embeddings";
+import { generateEmbedding } from "@/lib/embeddings";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
@@ -77,16 +77,16 @@ export async function POST(req: NextRequest) {
       // Remove null bytes and clean the text
       chunk.content.replace(/\0/g, "")
     );
-    const embeddings = await generateEmbeddings(chunkTexts);
 
     // Store chunks with embeddings in the database
     for (let i = 0; i < chunkTexts.length; i++) {
+      const embedding = await generateEmbedding(chunkTexts[i]);
       await prisma.$executeRaw`
         INSERT INTO document_chunks (document_id, data, embedding)
         VALUES (
           ${document.id}::uuid,
           ${chunkTexts[i]},
-          ${`[${embeddings[i].join(",")}]`}::vector
+          ${`[${embedding.join(",")}]`}::vector
         )
       `;
     }
