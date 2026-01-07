@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Provider } from "react-redux";
 import { store } from "@/lib/reduxStore";
+import { MdMenu } from "react-icons/md";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
   const router = useRouter();
   const loading = useRef(false);
   const params = useParams();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (loading.current || sets !== null) return;
@@ -89,57 +91,98 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="max-w-screen max-h-screen">
-          <main className="flex min-h-screen flex-row justify-between gap-3">
-            {/* Side Bar */}
-            <div className="flex flex-col bg-black/30 rounded-lg p-8 max-w-2xl">
-              <h1 className="text-4xl font-bold mb-4">QueCard</h1>
+        <div className="relative flex h-screen flex-col lg:flex-row justify-between gap-3">
+          <div className="absolute top-0 left-0 z-50 lg:hidden">
+            <MdMenu
+              className="w-12 h-12 pt-2 pl-2 cursor-pointer"
+              onClick={() => {
+                console.log(sidebarOpen);
+                setSidebarOpen((open) => !open);
+              }}
+            />
+          </div>
+          {/* Invisible bar to close the sidebar */}
+          <div
+            className={`lg:hidden fixed top-0 left-0 w-screen h-screen bg-transparent ${
+              sidebarOpen ? "block" : "hidden"
+            }`}
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          {/* Mobile Side Bar */}
+          <div
+            className={`lg:hidden absolute top-0 left-0 w-[70%] h-screen bg-black/80 flex flex-col rounded-lg p-8 max-w-2xl z-20 ${
+              sidebarOpen ? "" : "hidden"
+            }`}
+          >
+            <Sidebar sets={sets} deleteSet={deleteSet} params={params} />
+          </div>
 
-              <div className="flex flex-col gap-2">
-                <Link
-                  href="/"
-                  className={`px-4 py-2 rounded hover:bg-gray-900 cursor-pointer text-left ${
-                    !params.id && "bg-gray-800"
-                  }`}
-                >
-                  Create New Flashcards
-                </Link>
+          {/* Desktop Side Bar */}
+          <div
+            className={`hidden lg:flex flex-col bg-black/30 rounded-lg p-8 max-w-2xl`}
+          >
+            <Sidebar sets={sets} deleteSet={deleteSet} params={params} />
+          </div>
 
-                <h2>Card Sets</h2>
-                <div>
-                  {sets &&
-                    sets.map((set) => (
-                      <div
-                        key={set.id}
-                        className={`rounded cursor-pointer flex gap-2 ${
-                          params.id === set.id && "bg-gray-800"
-                        }`}
-                      >
-                        <Link href={`/${set.id}`} className="px-4 py-2">
-                          {set.title}
-                        </Link>
-                        <button
-                          className={`${
-                            params.id === set.id
-                              ? "bg-gray-900 px-4 py-2 cursor-pointer"
-                              : "hidden"
-                          }`}
-                          onClick={deleteSet}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-
-            <Provider store={store}>
-              <div className="flex-1">{children}</div>
-            </Provider>
-          </main>
+          <Provider store={store}>
+            <div className="flex-1">{children}</div>
+          </Provider>
         </div>
       </body>
     </html>
+  );
+}
+
+function Sidebar({
+  sets,
+  deleteSet,
+  params,
+}: {
+  sets: { id: string; title: string }[] | null;
+  deleteSet: () => void;
+  params: { id?: string | string[] };
+}) {
+  return (
+    <>
+      <h1 className="text-4xl font-bold mb-4">QueCard</h1>
+
+      <div className="flex flex-col gap-2">
+        <Link
+          href="/"
+          className={`px-4 py-2 rounded hover:bg-gray-900 cursor-pointer text-left ${
+            !params?.id && "bg-gray-800"
+          }`}
+        >
+          Create New Flashcards
+        </Link>
+
+        <h2>Card Sets</h2>
+        <div>
+          {sets &&
+            sets.map((set) => (
+              <div
+                key={set.id}
+                className={`rounded cursor-pointer flex justify-between gap-2 ${
+                  params?.id === set.id && "bg-gray-800"
+                }`}
+              >
+                <Link href={`/${set.id}`} className="px-4 py-2">
+                  {set.title}
+                </Link>
+                <button
+                  className={`${
+                    params?.id === set.id
+                      ? "bg-gray-900 px-4 py-2 cursor-pointer"
+                      : "hidden"
+                  }`}
+                  onClick={deleteSet}
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+        </div>
+      </div>
+    </>
   );
 }

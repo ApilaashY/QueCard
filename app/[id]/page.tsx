@@ -187,7 +187,7 @@ export default function CardSet() {
 
         {/* Options Grid */}
         <div className="grid md:grid-cols-[1fr_2fr] gap-6 flex-1 min-h-0 w-full">
-          <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0">
+          <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0 min-w-0">
             <h2 className="text-center text-3xl">Documents</h2>
             <div className="flex-1 overflow-y-auto min-h-0">
               {book?.documents.map((doc, index) => (
@@ -218,11 +218,14 @@ export default function CardSet() {
                 </div>
               )}
             </div>
-            <form onSubmit={uploadDocument} className="flex flex-row mt-4">
-              <input type="file" />
+            <form
+              onSubmit={uploadDocument}
+              className="flex flex-wrap gap-2 mt-4"
+            >
+              <input type="file" className="flex-1 min-w-0" />
               <input
                 type="submit"
-                className="ml-2 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
+                className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer whitespace-nowrap"
                 value="Upload"
               />
             </form>
