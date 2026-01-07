@@ -91,7 +91,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="relative flex h-screen flex-col lg:flex-row justify-between gap-3">
+        <div className="relative flex h-screen flex-col lg:flex-row justify-between gap-3 duration-200">
           <div className="absolute top-0 left-0 z-50 lg:hidden">
             <MdMenu
               className="w-12 h-12 pt-2 pl-2 cursor-pointer"
@@ -119,10 +119,25 @@ export default function RootLayout({
 
           {/* Desktop Side Bar */}
           <div
-            className={`hidden lg:flex flex-col bg-black/30 rounded-lg p-8 max-w-2xl`}
+            className={`hidden lg:flex absolute left-0 top-0 h-full z-10 flex-col bg-black/30 rounded-lg p-8 w-[25%] transition-transform duration-300 ease-in-out ${
+              sidebarOpen ? "lg:translate-x-0" : "lg:-translate-x-full"
+            }`}
           >
             <Sidebar sets={sets} deleteSet={deleteSet} params={params} />
+
+            <div
+              className="bg-gray-200 w-fit h-fit absolute top-1/2 -translate-y-1/2 -translate-x-1/2 left-full rounded-full cursor-pointer"
+              onClick={() => setSidebarOpen((open) => !open)}
+            >
+              <MdMenu className="rotate-90 text-black w-5 h-5 p-1" />
+            </div>
           </div>
+          {/* Desktop Side Bar Flex Placeholder */}
+          <div
+            className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
+              sidebarOpen ? "w-[25%]" : "w-0"
+            }`}
+          ></div>
 
           <Provider store={store}>
             <div className="flex-1">{children}</div>
