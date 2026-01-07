@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!book) {
+    console.log("BOOK NOT FOUND");
     return new NextResponse(JSON.stringify({ error: "Book not found" }), {
       status: 404,
     });

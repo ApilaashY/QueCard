@@ -12,6 +12,8 @@ export default function CardSet() {
   const [book, setBook] = useState<Book | null>(null);
   const router = useRouter();
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const [uploading, setUploading] = useState<string | boolean | null>(null);
+  const [clickedDocument, setClickedDocument] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadCardSet() {
@@ -45,6 +47,11 @@ export default function CardSet() {
     // Check if book is loaded
     if (!book) return;
 
+    // Check if book is already being uploaded
+    if (uploading !== null) return;
+
+    setUploading(true);
+
     const formElement = event.currentTarget;
     const fileInput = formElement.querySelector(
       'input[type="file"]'
@@ -55,6 +62,8 @@ export default function CardSet() {
     const formData = new FormData();
     formData.append("bookId", book.id);
     formData.append("document", files[0]);
+
+    setUploading(files[0].name);
 
     try {
       const response = await fetch(
@@ -69,6 +78,7 @@ export default function CardSet() {
         // Refresh the card set to show the new document
         const updatedSet = await fetchCardSet(book.id, true);
         if (updatedSet) {
+          setUploading(null);
           setBook(updatedSet);
         }
       } else {
@@ -76,6 +86,43 @@ export default function CardSet() {
       }
     } catch (error) {
       console.error("Error uploading document:", error);
+    }
+
+    setUploading(null);
+  }
+
+  async function removeDocument(documentId: string) {
+    // Check if book is loaded
+    if (!book) return;
+
+    // Make sure document is not being uploaded
+    if (uploading !== null) return;
+
+    // Make sure user really want to remove document
+    if (!confirm("Are you sure you want to remove this document?")) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/documents/remove`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            documentId,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        // Refresh the card set to show the new document
+        const updatedSet = await fetchCardSet(book.id, true);
+        if (updatedSet) {
+          setBook(updatedSet);
+        }
+      } else {
+        console.error("Failed to remove document");
+      }
+    } catch (error) {
+      console.error("Error removing document:", error);
     }
   }
 
@@ -143,11 +190,33 @@ export default function CardSet() {
           <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0">
             <h2 className="text-center text-3xl">Documents</h2>
             <div className="flex-1 overflow-y-auto min-h-0">
-              {book?.documents.map((doc) => (
-                <div key={doc.id} className="p-4 border-b border-gray-700">
-                  <h3 className="text-l font-semibold mb-2">{doc.title}</h3>
+              {book?.documents.map((doc, index) => (
+                <div
+                  key={doc.id}
+                  className="p-4 border-b border-gray-700 flex flex-row justify-between items-center"
+                  onMouseEnter={() => setClickedDocument(index)}
+                  onMouseLeave={() => setClickedDocument(null)}
+                >
+                  <h3 className="px-2 py-1 text-l font-semibold">
+                    {doc.title}
+                  </h3>
+                  {clickedDocument === index && uploading === null && (
+                    <button
+                      className="px-2 py-1 rounded cursor-pointer"
+                      onClick={() => removeDocument(doc.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               ))}
+              {uploading && typeof uploading === "string" && (
+                <div className="p-4 border-b border-gray-700 animate-pulse">
+                  <h3 className="text-l font-semibold mb-2 text-gray-400">
+                    {uploading}
+                  </h3>
+                </div>
+              )}
             </div>
             <form onSubmit={uploadDocument} className="flex flex-row mt-4">
               <input type="file" />

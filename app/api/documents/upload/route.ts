@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       data: {
         book_id: bookId,
         title: documentFile.name,
+        processing: true,
       },
     });
 
@@ -101,6 +102,12 @@ export async function POST(req: NextRequest) {
         .unlink(tempFilePath)
         .catch((err) => console.error("Error deleting temp file:", err));
     }
+
+    // Update document to not processing
+    await prisma.documents.update({
+      where: { id: document.id },
+      data: { processing: false },
+    });
 
     return new NextResponse(
       JSON.stringify({
