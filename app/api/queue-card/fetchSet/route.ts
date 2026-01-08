@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
   let book;
   let documents;
   let chats;
+  let card_sets;
   try {
     book = await prisma.books.findUnique({
       where: { id },
@@ -29,6 +30,10 @@ export async function POST(request: NextRequest) {
       where: { book_id: id },
       orderBy: { created_at: "asc" },
       select: { user: true, ai_response: true, created_at: true },
+    });
+    card_sets = await prisma.card_sets.findMany({
+      where: { book_id: id },
+      select: { id: true, title: true },
     });
   } catch (error) {
     console.error("Error fetching book:", error);
@@ -48,7 +53,12 @@ export async function POST(request: NextRequest) {
   }
 
   return new NextResponse(
-    JSON.stringify({ ...book, documents: documents, chats: chats }),
+    JSON.stringify({
+      ...book,
+      documents: documents,
+      chats: chats,
+      card_sets: card_sets,
+    }),
     {
       status: 200,
     }

@@ -29,6 +29,7 @@ model books {
   owner      String?     @db.Uuid
   title      String?     @default("")
   users      users?      @relation(fields: [owner], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "card_sets_owner_fkey")
+  card_sets  card_sets[]
   chats      chats[]
   documents  documents[]
 }
@@ -50,4 +51,23 @@ model chats {
   ai_response String?
   book_id     String?  @db.Uuid
   books       books?   @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model card_sets {
+  id      String  @id(map: "card-set_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  book_id String? @db.Uuid
+  title   String?
+  books   books?  @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "card-set_book_id_fkey")
+  cards   cards[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cards {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question    String?
+  answer      String?
+  card_set_id String?    @db.Uuid
+  order       BigInt
+  card_sets   card_sets? @relation(fields: [card_set_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

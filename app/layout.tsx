@@ -103,15 +103,17 @@ export default function RootLayout({
           </div>
           {/* Invisible bar to close the sidebar */}
           <div
-            className={`lg:hidden fixed top-0 left-0 w-screen h-screen bg-transparent ${
-              sidebarOpen ? "block" : "hidden"
+            className={`lg:hidden fixed inset-0 z-10 transition-all duration-300 ease-in-out ${
+              sidebarOpen
+                ? "opacity-100 backdrop-blur-sm pointer-events-auto"
+                : "opacity-0 backdrop-blur-none pointer-events-none"
             }`}
             onClick={() => setSidebarOpen(false)}
           ></div>
           {/* Mobile Side Bar */}
           <div
-            className={`lg:hidden absolute top-0 left-0 w-[70%] h-screen bg-black/80 flex flex-col rounded-lg p-8 max-w-2xl z-20 ${
-              sidebarOpen ? "" : "hidden"
+            className={`lg:hidden absolute top-0 left-0 w-[70%] h-screen bg-black/80 flex flex-col rounded-lg p-8 max-w-2xl z-20 transition-transform duration-300 ease-in-out ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
             <Sidebar sets={sets} deleteSet={deleteSet} params={params} />
@@ -120,7 +122,7 @@ export default function RootLayout({
           {/* Desktop Side Bar */}
           <div
             className={`hidden lg:flex absolute left-0 top-0 h-full z-10 flex-col bg-black/30 rounded-lg p-8 w-[25%] transition-transform duration-300 ease-in-out ${
-              sidebarOpen ? "lg:translate-x-0" : "lg:-translate-x-full"
+              !sidebarOpen ? "lg:translate-x-0" : "lg:-translate-x-full"
             }`}
           >
             <Sidebar sets={sets} deleteSet={deleteSet} params={params} />
@@ -135,7 +137,7 @@ export default function RootLayout({
           {/* Desktop Side Bar Flex Placeholder */}
           <div
             className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-              sidebarOpen ? "w-[25%]" : "w-0"
+              !sidebarOpen ? "w-[25%]" : "w-0"
             }`}
           ></div>
 

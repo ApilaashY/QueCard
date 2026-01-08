@@ -7,7 +7,11 @@ export default function Home() {
 
   async function handleClick() {
     let bookName = prompt("Enter a name for the book:");
-    while (!bookName) {
+    while (!bookName || bookName?.trim() === "") {
+      if (bookName === null) {
+        return;
+      }
+
       bookName = prompt(
         "Book name cannot be empty. Please enter a name for the book:"
       );
@@ -35,7 +39,7 @@ export default function Home() {
     <div className="flex flex-col justify-center items-center min-h-screen">
       <button
         type="submit"
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
         onClick={handleClick}
       >
         Create New Book

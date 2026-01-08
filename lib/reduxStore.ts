@@ -5,6 +5,7 @@ export interface Book {
   title: string;
   documents: Document[];
   chats: Chat[];
+  card_sets: CardSet[];
 }
 
 export interface Document {
@@ -16,6 +17,17 @@ export interface Chat {
   user: string;
   ai_response: string;
   created_at: string;
+}
+
+export interface CardSet {
+  id: string;
+  title: string;
+}
+
+export interface Card {
+  id: string;
+  question: string;
+  answer: string;
 }
 
 const cardSets = createSlice({
@@ -53,7 +65,7 @@ export const store = configureStore({
 // export const { addCardSet } = cardSets.actions;
 
 // Function to get a specfic card set from the api
-export async function fetchCardSet(
+export async function fetchBookSet(
   id: string,
   forceDownload: boolean = false
 ): Promise<Book | undefined> {
@@ -90,7 +102,33 @@ export async function fetchCardSet(
 
     return book;
   } catch (error) {
-    console.error("Error fetching card set:", error);
+    console.error("Error fetching book:", error);
   }
   return undefined;
+}
+
+export async function fetchCardSet(id: string): Promise<Card[] | undefined> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/fetchCardSet`,
+      {
+        method: "POST",
+        body: JSON.stringify({ id }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.status !== 200) {
+      console.error("Failed to fetch card set");
+      return;
+    }
+
+    const card_set = await response.json();
+
+    return card_set.cards;
+  } catch (error) {
+    console.error("Error fetching card set:", error);
+  }
 }
