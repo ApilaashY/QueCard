@@ -10,6 +10,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid book ID" }, { status: 400 });
   }
 
+  // Make new card set
+  const cardSet = await prisma.card_sets.create({
+    data: {
+      title: "Generated Flashcards",
+      book_id: bookId,
+      processing: true,
+    },
+  });
+
   const documents = await prisma.documents.findMany({
     where: {
       book_id: bookId,
@@ -50,14 +59,6 @@ export async function POST(request: NextRequest) {
   try {
     const flashcards = flashcardString.split("\n\n");
 
-    // Make new card set
-    const cardSet = await prisma.card_sets.create({
-      data: {
-        title: "Generated Flashcards",
-        book_id: bookId,
-      },
-    });
-
     flashcards.forEach(async (flashcard, index) => {
       const [question, answer] = flashcard.split("\n");
       await prisma.cards.create({
@@ -70,11 +71,27 @@ export async function POST(request: NextRequest) {
       });
     });
 
+    // Make new card set
+    await prisma.card_sets.update({
+      where: {
+        id: cardSet.id,
+      },
+      data: {
+        processing: false,
+      },
+    });
+
     return NextResponse.json(
       { message: "Flashcards generated successfully" },
       { status: 200 }
     );
   } catch (error) {
+    // Remove card set
+    await prisma.card_sets.delete({
+      where: {
+        id: cardSet.id,
+      },
+    });
     console.error("Error creating card set:", error);
     return NextResponse.json(
       { error: "Failed to create card set" },

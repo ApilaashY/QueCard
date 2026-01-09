@@ -22,6 +22,7 @@ export interface Chat {
 export interface CardSet {
   id: string;
   title: string;
+  processing: boolean;
 }
 
 export interface Card {

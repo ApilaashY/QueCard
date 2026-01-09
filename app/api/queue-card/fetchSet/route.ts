@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     });
     card_sets = await prisma.card_sets.findMany({
       where: { book_id: id },
-      select: { id: true, title: true },
+      select: { id: true, title: true, processing: true },
     });
   } catch (error) {
     console.error("Error fetching book:", error);

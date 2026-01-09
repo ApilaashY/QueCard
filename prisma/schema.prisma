@@ -55,11 +55,12 @@ model chats {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model card_sets {
-  id      String  @id(map: "card-set_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  book_id String? @db.Uuid
-  title   String?
-  books   books?  @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "card-set_book_id_fkey")
-  cards   cards[]
+  id         String  @id(map: "card-set_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  book_id    String? @db.Uuid
+  title      String?
+  processing Boolean
+  books      books?  @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "card-set_book_id_fkey")
+  cards      cards[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

@@ -75,7 +75,7 @@ export default function CardPage() {
       <div className="absolute top-8 left-8">
         <button
           onClick={() => router.push(`/${id}`)}
-          className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+          className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
         >
           ← Back to Library
         </button>

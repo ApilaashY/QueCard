@@ -251,7 +251,15 @@ export default function CardSet() {
     }
   }
 
-  async function editCardSet(card_set_id: string, prompt: string) {
+  async function editCardSet(
+    card_set_id: string,
+    prompt: string,
+    e: React.FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
+
+    setMenuOpen(null);
+
     // Check if book is loaded
     if (!book) return;
 
@@ -264,7 +272,7 @@ export default function CardSet() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            bookId: card_set_id,
+            bookId: book.id,
             setId: card_set_id,
             prompt,
           }),
@@ -283,6 +291,8 @@ export default function CardSet() {
     } catch (error) {
       console.error("Error editing card set:", error);
     }
+
+    setEditingCardSet("");
   }
   if (loading || book === null) {
     return (
@@ -310,7 +320,10 @@ export default function CardSet() {
               <h3 className="text-xl font-bold text-white">Modifications</h3>
             </div>
 
-            <div className="flex items-center gap-2 mb-6">
+            <form
+              onSubmit={(e) => editCardSet(menuOpen, editingCardSet, e)}
+              className="flex items-center gap-2 mb-6"
+            >
               <input
                 type="text"
                 className="flex-1 border border-gray-600 rounded-xl px-4 py-2 text-white bg-gray-800"
@@ -318,17 +331,12 @@ export default function CardSet() {
                 onChange={(e) => setEditingCardSet(e.target.value)}
                 placeholder="Make changes to card set. Enter in natural language."
               />
-              <button
+              <input
+                type="submit"
                 className="bg-blue-600/20 hover:bg-blue-600/40 rounded-xl transition-colors px-4 py-2 text-white cursor-pointer"
-                onClick={() => {
-                  editCardSet(menuOpen, editingCardSet);
-                  setMenuOpen(null);
-                  setEditingCardSet("");
-                }}
-              >
-                Enter
-              </button>
-            </div>
+                value="Enter"
+              />
+            </form>
 
             <div className="flex flex-col gap-3">
               <button
