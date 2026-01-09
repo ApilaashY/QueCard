@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     const model = genAi.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
     const response = await model.generateContent(
-      "Please update the following flashcards based on the request and the context related to the flashcards. Make sure that when updating the flashcards, do not change the number of flash cards. Make sure the questions are clear and concise and the answers are detailed. The flashcards should include important content relavent to the context. Output the flashcard by returning a long string of which it goes question, newline, answer, newline, newline, next question. Previous Flash Cards:" +
+      "Please update the following flashcards based on the request and the context related to the flashcards. Make sure that when updating the flashcards, do not change the number of flash cards. Make sure the questions are clear and concise and the answers are detailed. You are allowed to use Latex if needed but no other formatting is allowed. The flashcards should include important content relavent to the context. Output the flashcard by returning a long string of which it goes question, newline, answer, newline, newline, next question. Previous Flash Cards:" +
         flashCards +
         "\n\nPrompt: " +
         prompt +

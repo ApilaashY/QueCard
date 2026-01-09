@@ -3,6 +3,8 @@
 import { Card, fetchCardSet } from "@/lib/reduxStore";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { InlineMath } from "react-katex";
+import "katex/dist/katex.min.css";
 
 export default function CardPage() {
   const { id, cardId } = useParams();
@@ -113,7 +115,10 @@ export default function CardPage() {
               Question
             </span>
             <h2 className="text-3xl md:text-4xl font-semibold leading-tight overflow-y-auto">
-              {currentCard.question}
+              {currentCard.question.split(/\$\$|\$/).map((part, i) => {
+                if (i % 2 === 0) return <span key={i}>{part}</span>;
+                return <InlineMath key={i} math={part} />;
+              })}
             </h2>
             <p className="mt-8 text-gray-500 text-sm">
               Click or press Space to flip
@@ -126,7 +131,10 @@ export default function CardPage() {
               Answer
             </span>
             <div className="text-2xl md:text-3xl overflow-y-auto">
-              {currentCard.answer}
+              {currentCard.answer.split(/\$\$|\$/).map((part, i) => {
+                if (i % 2 === 0) return <span key={i}>{part}</span>;
+                return <InlineMath key={i} math={part} />;
+              })}
             </div>
           </div>
         </div>

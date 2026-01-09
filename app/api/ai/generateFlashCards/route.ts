@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   const model = genAi.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   const response = await model.generateContent(
-    "Please turn the following context into 10 flashcards. Make sure the questions are clear and concise and the answers are detailed. The flashcards should include important content relavent to the context. Output the flashcard by returning a long string of which it goes question, newline, answer, newline, newline, next question.Context: " +
+    "Please turn the following context into 10 flashcards. Make sure the questions are clear and concise and the answers are detailed. You are allowed to use Latex if needed but no other formatting is allowed. The flashcards should include important content relavent to the context. Output the flashcard by returning a long string of which it goes question, newline, answer, newline, newline, next question.Context: " +
       context
   );
 
