@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { redis } from "@/lib/redis";
 
 export async function POST(request: NextRequest) {
   const { id } = await request.json();
@@ -8,6 +9,10 @@ export async function POST(request: NextRequest) {
   if (!id || typeof id !== "string") {
     return new NextResponse("ID is required or invalid", { status: 400 });
   }
+
+  // Invalidate cache
+  const userId = "98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb";
+  await redis.del(`user_sets:${userId}`);
 
   try {
     const book = await prisma.books.findUniqueOrThrow({

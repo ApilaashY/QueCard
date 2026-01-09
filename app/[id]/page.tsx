@@ -263,6 +263,27 @@ export default function CardSet() {
     // Check if book is loaded
     if (!book) return;
 
+    // Make sure the book is not already processing
+    if (book.card_sets.some((set) => set.processing)) {
+      alert("Please wait for the current card set to finish processing");
+      return;
+    }
+
+    // Set the card set to processing
+    const newBook = {
+      ...book,
+    };
+    newBook.card_sets = book.card_sets.map((set) => {
+      if (set.id === card_set_id) {
+        return {
+          ...set,
+          processing: true,
+        };
+      }
+      return set;
+    });
+    setBook(newBook);
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/edit`,
@@ -451,7 +472,7 @@ export default function CardSet() {
 
           {/* Generate AI-Content */}
           <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0">
-            <h2 className="text-center text-3xl">Generate AI-Content</h2>
+            <h2 className="text-center text-3xl">Generate Content</h2>
 
             {/* Generatable AI Content */}
             <div className="flex-1 grid grid-cols-2 gap-4 my-5 mx-3">
@@ -472,16 +493,24 @@ export default function CardSet() {
                   onMouseEnter={() => setClickedAi(index)}
                   onMouseLeave={() => setClickedAi(null)}
                 >
-                  <Link
-                    href={`/${book.id}/cards/${card_set.id}`}
-                    className="block bg-white/10 p-4 rounded-lg hover:bg-white/20 transition-colors"
+                  <div
+                    onClick={() =>
+                      card_set.processing
+                        ? null
+                        : router.push(`/${book.id}/cards/${card_set.id}`)
+                    }
+                    className={`block bg-white/10 p-4 rounded-lg hover:bg-white/20 transition-colors ${
+                      card_set.processing
+                        ? "animate-pulse cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
                   >
                     <div className="flex flex-row justify-between items-center">
                       <h3 className="text-xl font-semibold">
                         {card_set.title}
                       </h3>
                     </div>
-                  </Link>
+                  </div>
                   {clickedAi === index && (
                     <button
                       className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-white/10 rounded-full cursor-pointer z-10"

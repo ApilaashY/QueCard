@@ -13,6 +13,37 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Make sure card set exists
+    const cardSet = await prisma.card_sets.findUnique({
+      where: {
+        id: setId,
+      },
+    });
+    if (!cardSet) {
+      return NextResponse.json(
+        { error: "Card set not found" },
+        { status: 404 }
+      );
+    }
+
+    // Make sure card set is not already processing
+    if (cardSet.processing) {
+      return NextResponse.json(
+        { error: "Can't process card set while it is already processing" },
+        { status: 400 }
+      );
+    }
+
+    // Set the book to processing
+    await prisma.card_sets.update({
+      where: {
+        id: setId,
+      },
+      data: {
+        processing: true,
+      },
+    });
+
     // Get documents for book
     const documents = await prisma.documents.findMany({
       where: {
@@ -83,11 +114,31 @@ export async function POST(req: Request) {
         });
       });
 
+      // Set the book to processing
+      await prisma.card_sets.update({
+        where: {
+          id: setId,
+        },
+        data: {
+          processing: false,
+        },
+      });
+
       return NextResponse.json(
         { message: "Flashcards generated successfully" },
         { status: 200 }
       );
     } catch (error) {
+      // Set the book to processing
+      await prisma.card_sets.update({
+        where: {
+          id: setId,
+        },
+        data: {
+          processing: false,
+        },
+      });
+
       console.error("Error editing card set:", error);
       return NextResponse.json(
         { error: "Failed to edit card set" },
@@ -95,6 +146,16 @@ export async function POST(req: Request) {
       );
     }
   } catch (error) {
+    // Set the book to processing
+    await prisma.card_sets.update({
+      where: {
+        id: setId,
+      },
+      data: {
+        processing: false,
+      },
+    });
+
     console.error("Error editing card set:", error);
     return NextResponse.json(
       { error: "Failed to edit card set" },

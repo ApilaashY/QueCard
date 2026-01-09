@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { redis } from "@/lib/redis";
 
 export async function POST(request: NextRequest) {
   console.log("started processing");
@@ -8,6 +9,22 @@ export async function POST(request: NextRequest) {
 
   if (!bookId || typeof bookId !== "string") {
     return NextResponse.json({ error: "Invalid book ID" }, { status: 400 });
+  }
+
+  // Rate Limiting
+  const ip = request.headers.get("x-forwarded-for") || "anonymous";
+  const rateLimitKey = `rate_limit:ai_gen:${ip}`;
+  const currentCount = await redis.incr(rateLimitKey);
+
+  if (currentCount === 1) {
+    await redis.expire(rateLimitKey, 3600); // 1 hour window
+  }
+
+  if (currentCount > 5) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again in an hour." },
+      { status: 429 }
+    );
   }
 
   // Make new card set
