@@ -17,6 +17,7 @@ export interface DoclingResult {
   metadata?: {
     num_pages: number;
     num_chunks: number;
+    s3Key?: string;
   };
   error?: string;
 }
@@ -26,63 +27,62 @@ export interface DoclingResult {
  * @param pdfPath - Absolute path to the PDF file
  * @returns Promise with structured chunks
  */
-export async function processPdf(
-  pdfPath: string
-): Promise<DoclingResult> {
+export async function processPdf(pdfPath: string): Promise<DoclingResult> {
   try {
     // Read the PDF file
     const buffer = await fs.readFile(pdfPath);
-    
+
     return new Promise((resolve) => {
       const reader = new PdfReader();
       let currentPage = 0;
       let maxPage = 0;
       const pageTexts: Record<number, string[]> = {};
-      
+
       reader.parseBuffer(buffer, (err, item) => {
         if (err) {
           resolve({
             success: false,
-            error: `Failed to process PDF: ${err}`
+            error: `Failed to process PDF: ${err}`,
           });
           return;
         }
-        
+
         if (!item) {
           // End of parsing
           const fullText = Object.keys(pageTexts)
             .sort((a, b) => Number(a) - Number(b))
-            .map(page => pageTexts[Number(page)].join(' '))
-            .join('\n\n');
-          
+            .map((page) => pageTexts[Number(page)].join(" "))
+            .join("\n\n");
+
           // Split text into chunks (by paragraphs/sections)
-          const raw_chunks = fullText.split('\n\n');
-          
+          const raw_chunks = fullText.split("\n\n");
+
           const chunks: DoclingChunk[] = [];
           for (let i = 0; i < raw_chunks.length; i++) {
             const chunk_content = raw_chunks[i].trim();
-            if (chunk_content) {  // Skip empty chunks
+            if (chunk_content) {
+              // Skip empty chunks
               chunks.push({
                 content: chunk_content,
                 type: "text",
                 metadata: {
-                  chunk_index: i
-                }
+                  chunk_index: i,
+                },
               });
             }
           }
-          
+
           resolve({
             success: true,
             chunks,
             metadata: {
               num_pages: maxPage + 1,
-              num_chunks: chunks.length
-            }
+              num_chunks: chunks.length,
+            },
           });
           return;
         }
-        
+
         if (item.page) {
           currentPage = item.page - 1;
           maxPage = Math.max(maxPage, currentPage);
@@ -97,7 +97,7 @@ export async function processPdf(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to process PDF: ${(error as Error).message}`
+      error: `Failed to process PDF: ${(error as Error).message}`,
     };
   }
 }
@@ -109,7 +109,7 @@ export async function processPdf(
 export function prepareChunksForGemini(
   chunks: DoclingChunk[],
   minChunkSize = 50,
-  targetChunkSize = 800
+  targetChunkSize = 800,
 ): string[] {
   const processedChunks: string[] = [];
   let currentChunk = "";

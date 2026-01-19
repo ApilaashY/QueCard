@@ -11,7 +11,10 @@ export async function POST() {
     const cachedSets = await redis.get(cacheKey);
     if (cachedSets) {
       console.log("Serving sets from cache");
-      return NextResponse.json({ sets: cachedSets }, { status: 200 });
+      return NextResponse.json(
+        { sets: JSON.parse(cachedSets) },
+        { status: 200 }
+      );
     }
   } catch (error) {
     console.error("Redis cache error:", error);
@@ -37,7 +40,7 @@ export async function POST() {
 
   try {
     // Cache the results for 10 minutes
-    await redis.set(cacheKey, books, { ex: 600 });
+    await redis.set(cacheKey, JSON.stringify(books), "EX", 600);
   } catch (error) {
     console.error("Error setting Redis cache:", error);
   }

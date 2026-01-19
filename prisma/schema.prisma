@@ -19,6 +19,7 @@ model documents {
   book_id         String            @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title           String?
   processing      Boolean
+  s3_key          String?
   document_chunks document_chunks[]
   books           books             @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "documents_card_set_id_fkey")
 }

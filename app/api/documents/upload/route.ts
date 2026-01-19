@@ -1,30 +1,59 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { processPdf } from "@/lib/pdf-processer";
+import { DoclingResult, processPdf } from "@/lib/pdf-processer";
 import { generateEmbedding } from "@/lib/embeddings";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
+import { processYoutube } from "@/lib/youtube-processer";
+import { uploadToS3 } from "@/lib/s3";
+import { analyzeDocumentFromS3 } from "@/lib/textract";
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
 
   const bookId = formData.get("bookId") as string;
   const documentFile = formData.get("document") as File;
+  const urlName = formData.get("url") as string;
+  const docType = formData.get("type") as "pdf" | "youtube";
 
-  if (!bookId || !documentFile) {
+  // Check if the docType is valid
+  if (docType !== "pdf" && docType !== "youtube") {
     return new NextResponse(
-      JSON.stringify({ success: false, message: "Missing bookId or document" }),
-      { status: 400 }
+      JSON.stringify({ success: false, message: "Invalid document type" }),
+      { status: 400 },
     );
   }
 
-  // Check if file is a pdf file
-  if (documentFile.type !== "application/pdf") {
-    return new NextResponse(
-      JSON.stringify({ success: false, message: "Only PDF files are allowed" }),
-      { status: 400 }
-    );
+  // Check if correct data was sent according = docType
+  if (docType == "pdf") {
+    if (!bookId || !documentFile) {
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          message: "Missing bookId or document",
+        }),
+        { status: 400 },
+      );
+    }
+
+    // Check if file is a pdf file
+    if (documentFile.type !== "application/pdf") {
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          message: "Only PDF files are allowed",
+        }),
+        { status: 400 },
+      );
+    }
+  } else if (docType == "youtube") {
+    if (!bookId || !urlName) {
+      return new NextResponse(
+        JSON.stringify({ success: false, message: "Missing bookId or url" }),
+        { status: 400 },
+      );
+    }
   }
 
   // Check if book exists
@@ -34,7 +63,7 @@ export async function POST(req: NextRequest) {
   if (!book) {
     return new NextResponse(
       JSON.stringify({ success: false, message: "Book not found" }),
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -42,41 +71,95 @@ export async function POST(req: NextRequest) {
   let tempFilePath: string | null = null;
 
   try {
-    // Create a temporary file to store the PDF
-    const tempDir = os.tmpdir();
-    tempFilePath = path.join(tempDir, `${Date.now()}-${documentFile.name}`);
+    let result: DoclingResult;
+    if (docType == "pdf") {
+      if (process.env.USE_AWS_OCR === "true") {
+        try {
+          // Upload to S3
+          const s3Key = await uploadToS3(documentFile);
 
-    // Write the file to disk
-    const arrayBuffer = await documentFile.arrayBuffer();
-    await fs.writeFile(tempFilePath, Buffer.from(arrayBuffer));
+          // Analyze with Textract
+          result = await analyzeDocumentFromS3(s3Key);
 
-    // Process the PDF to extract chunks
-    const result = await processPdf(tempFilePath);
+          // Store s3Key (will be added to prisma create call below)
+          // We'll modify the create call to include s3_key if available
 
-    if (!result.success || !result.chunks) {
-      return new NextResponse(
-        JSON.stringify({
-          success: false,
-          message: result.error || "Failed to process PDF",
-        }),
-        { status: 500 }
-      );
+          if (!result.success || !result.chunks) {
+            throw new Error(
+              result.error || "Failed to process PDF with Textract",
+            );
+          }
+
+          // We can attach the s3Key to the result object or handle it separately.
+          // Since DoclingResult doesn't have s3Key, let's keep it in a variable scope.
+          // Hack: attach it to result.metadata to pass it down, or just use variable.
+          if (!result.metadata)
+            result.metadata = { num_pages: 0, num_chunks: 0 };
+          result.metadata.s3Key = s3Key;
+        } catch (e) {
+          console.error("AWS Retrieval/Processing failed", e);
+          // Fallback or Error?
+          // Let's error for now as the user explicitly wanted AWS.
+          return new NextResponse(
+            JSON.stringify({
+              success: false,
+              message: "AWS Processing Failed: " + (e as Error).message,
+            }),
+            { status: 500 },
+          );
+        }
+      } else {
+        // Local Processing (Original)
+        const tempDir = os.tmpdir();
+        tempFilePath = path.join(tempDir, `${Date.now()}-${documentFile.name}`);
+
+        // Write the file to disk
+        const arrayBuffer = await documentFile.arrayBuffer();
+        await fs.writeFile(tempFilePath, Buffer.from(arrayBuffer));
+
+        // Process the PDF to extract chunks
+        result = await processPdf(tempFilePath);
+
+        if (!result.success || !result.chunks) {
+          return new NextResponse(
+            JSON.stringify({
+              success: false,
+              message: result.error || "Failed to process PDF",
+            }),
+            { status: 500 },
+          );
+        }
+      }
+    } else {
+      console.log(urlName);
+      result = await processYoutube(urlName);
+
+      if (!result.success || !result.chunks) {
+        return new NextResponse(
+          JSON.stringify({
+            success: false,
+            message: result.error || "Video doesn't have a transcript",
+          }),
+          { status: 500 },
+        );
+      }
     }
 
     // Create document and store chunks in database
     const document = await prisma.documents.create({
       data: {
         book_id: bookId,
-        title: documentFile.name,
+        title: docType === "pdf" ? documentFile.name : `YouTube: ${urlName}`,
         processing: true,
+        s3_key: result.metadata?.s3Key || null,
       },
     });
 
     // Generate embeddings for all chunks
-    console.log(`Generating embeddings for ${result.chunks.length} chunks...`);
-    const chunkTexts = result.chunks.map((chunk) =>
+    console.log(`Generating embeddings for ${result.chunks!.length} chunks...`);
+    const chunkTexts = result.chunks!.map((chunk) =>
       // Remove null bytes and clean the text
-      chunk.content.replace(/\0/g, "")
+      chunk.content.replace(/\0/g, ""),
     );
 
     // Store chunks with embeddings in the database
@@ -93,7 +176,9 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(
-      `Stored ${result.chunks.length} chunks with embeddings for document ${documentFile.name}`
+      `Stored ${result.chunks!.length} chunks with embeddings for document ${
+        docType === "pdf" ? documentFile.name : urlName
+      }`,
     );
 
     // Clean up temp file
@@ -113,11 +198,11 @@ export async function POST(req: NextRequest) {
       JSON.stringify({
         success: true,
         documentId: document.id,
-        chunksProcessed: result.chunks.length,
+        chunksProcessed: result.chunks!.length,
       }),
       {
         status: 200,
-      }
+      },
     );
   } catch (error) {
     console.error("Error processing document:", error);
@@ -131,7 +216,7 @@ export async function POST(req: NextRequest) {
 
     return new NextResponse(
       JSON.stringify({ success: false, message: "Failed to process document" }),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

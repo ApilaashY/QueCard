@@ -46,6 +46,9 @@ export default function CardSet() {
     }
   }, [book?.chats]);
 
+  const [uploadMenuOpen, setUploadMenuOpen] = useState(false);
+  const [uploadType, setUploadType] = useState<"pdf" | "youtube">("pdf");
+
   async function uploadDocument(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -57,18 +60,35 @@ export default function CardSet() {
 
     setUploading(true);
 
-    const formElement = event.currentTarget;
-    const fileInput = formElement.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    const files = fileInput?.files;
-    if (!files || files.length === 0) return;
-
     const formData = new FormData();
     formData.append("bookId", book.id);
-    formData.append("document", files[0]);
+    const formElement = event.currentTarget;
 
-    setUploading(files[0].name);
+    if (uploadType === "pdf") {
+      const fileInput = formElement.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const files = fileInput?.files;
+      if (!files || files.length === 0) {
+        setUploading(null);
+        return;
+      }
+      formData.append("document", files[0]);
+      formData.append("type", "pdf");
+      setUploading(files[0].name);
+    } else {
+      const urlInput = formElement.querySelector(
+        'input[name="url"]',
+      ) as HTMLInputElement;
+      const url = urlInput?.value;
+      if (!url) {
+        setUploading(null);
+        return;
+      }
+      formData.append("url", url);
+      formData.append("type", "youtube");
+      setUploading(url);
+    }
 
     try {
       const response = await fetch(
@@ -76,7 +96,7 @@ export default function CardSet() {
         {
           method: "POST",
           body: formData,
-        }
+        },
       );
 
       if (response.ok) {
@@ -85,9 +105,14 @@ export default function CardSet() {
         if (updatedSet) {
           setUploading(null);
           setBook(updatedSet);
+          setUploadMenuOpen(false); // Close menu on success
         }
       } else {
         console.error("Failed to upload document");
+        const message = (await response.json()).message;
+        if (message) {
+          alert(message);
+        }
       }
     } catch (error) {
       console.error("Error uploading document:", error);
@@ -114,7 +139,7 @@ export default function CardSet() {
           body: JSON.stringify({
             documentId,
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -139,7 +164,7 @@ export default function CardSet() {
 
     const formElement = event.currentTarget;
     const messageInput = formElement.querySelector(
-      'input[name="textinput"]'
+      'input[name="textinput"]',
     ) as HTMLInputElement;
     const message = messageInput?.value;
     if (!message) return;
@@ -156,7 +181,7 @@ export default function CardSet() {
             bookId: book.id,
             message,
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -192,7 +217,7 @@ export default function CardSet() {
           body: JSON.stringify({
             bookId: book.id,
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -234,7 +259,7 @@ export default function CardSet() {
           body: JSON.stringify({
             id: card_set_id,
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -254,7 +279,7 @@ export default function CardSet() {
   async function editCardSet(
     card_set_id: string,
     prompt: string,
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) {
     e.preventDefault();
 
@@ -297,7 +322,7 @@ export default function CardSet() {
             setId: card_set_id,
             prompt,
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -415,18 +440,89 @@ export default function CardSet() {
                 </div>
               )}
             </div>
-            <form
-              onSubmit={uploadDocument}
-              className="flex flex-wrap gap-2 mt-4"
+            <button
+              onClick={() => setUploadMenuOpen(true)}
+              className="mt-4 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer w-full"
             >
-              <input type="file" className="flex-1 min-w-0" />
-              <input
-                type="submit"
-                className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer whitespace-nowrap"
-                value="Upload"
-              />
-            </form>
+              Add Document
+            </button>
           </div>
+
+          {/* Upload Menu Overlay */}
+          {uploadMenuOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              onClick={() => setUploadMenuOpen(false)}
+            >
+              <div
+                className="bg-gray-900 border border-gray-700 p-6 rounded-2xl shadow-2xl w-[90%] max-w-[500px]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-xl font-bold text-white mb-6 text-center">
+                  Add New Document
+                </h3>
+
+                <div className="flex bg-gray-800 p-1 rounded-xl mb-6">
+                  <button
+                    className={`flex-1 py-2 rounded-lg transition-colors cursor-pointer ${
+                      uploadType === "pdf"
+                        ? "bg-gray-700 text-white"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                    onClick={() => setUploadType("pdf")}
+                  >
+                    PDF Upload
+                  </button>
+                  <button
+                    className={`flex-1 py-2 rounded-lg transition-colors cursor-pointer ${
+                      uploadType === "youtube"
+                        ? "bg-gray-700 text-white"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                    onClick={() => setUploadType("youtube")}
+                  >
+                    YouTube URL
+                  </button>
+                </div>
+
+                <form onSubmit={uploadDocument} className="flex flex-col gap-4">
+                  {uploadType === "pdf" ? (
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm text-gray-400">
+                        Select PDF File
+                      </label>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm text-gray-400">
+                        YouTube Video URL
+                      </label>
+                      <input
+                        type="url"
+                        name="url"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <input
+                    type="submit"
+                    className="mt-2 w-full py-3 bg-blue-600 rounded-xl hover:bg-blue-700 font-semibold cursor-pointer transition-colors"
+                    value={uploading ? "Uploading..." : "Add Document"}
+                    disabled={uploading !== null}
+                  />
+                </form>
+              </div>
+            </div>
+          )}
 
           {/* Chats */}
           <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0">
