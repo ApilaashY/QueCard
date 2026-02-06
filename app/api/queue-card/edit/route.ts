@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req: Request) {
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
   if (!bookId || !setId || !prompt) {
     return NextResponse.json(
       { error: "Missing book ID or prompt" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     if (!cardSet) {
       return NextResponse.json(
         { error: "Card set not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     if (cardSet.processing) {
       return NextResponse.json(
         { error: "Can't process card set while it is already processing" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     if (!documents) {
       return NextResponse.json(
         { error: "There are no documents for this book" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
         "\n\nPrompt: " +
         prompt +
         "\n\nContext: " +
-        context
+        context,
     );
 
     const flashcardString = response.response.text();
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json(
         { message: "Flashcards generated successfully" },
-        { status: 200 }
+        { status: 200 },
       );
     } catch (error) {
       // Set the book to processing
@@ -139,10 +140,10 @@ export async function POST(req: Request) {
         },
       });
 
-      console.error("Error editing card set:", error);
+      logger.error("Error editing card set:", error);
       return NextResponse.json(
         { error: "Failed to edit card set" },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error) {
@@ -156,10 +157,10 @@ export async function POST(req: Request) {
       },
     });
 
-    console.error("Error editing card set:", error);
+    logger.error("Error editing card set:", error);
     return NextResponse.json(
       { error: "Failed to edit card set" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
@@ -10,14 +11,14 @@ export async function POST() {
   try {
     const cachedSets = await redis.get(cacheKey);
     if (cachedSets) {
-      console.log("Serving sets from cache");
+      logger.log("Serving sets from cache");
       return NextResponse.json(
         { sets: JSON.parse(cachedSets) },
-        { status: 200 }
+        { status: 200 },
       );
     }
   } catch (error) {
-    console.error("Redis cache error:", error);
+    logger.error("Redis cache error:", error);
   }
 
   // Grab all books from the database
@@ -34,7 +35,7 @@ export async function POST() {
       },
     });
   } catch (error) {
-    console.error("Error fetching books:", error);
+    logger.error("Error fetching books:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 
@@ -42,7 +43,7 @@ export async function POST() {
     // Cache the results for 10 minutes
     await redis.set(cacheKey, JSON.stringify(books), "EX", 600);
   } catch (error) {
-    console.error("Error setting Redis cache:", error);
+    logger.error("Error setting Redis cache:", error);
   }
 
   return NextResponse.json({ sets: books }, { status: 200 });

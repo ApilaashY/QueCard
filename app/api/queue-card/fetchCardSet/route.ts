@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
       JSON.stringify({ error: "Invalid or missing 'id' parameter" }),
       {
         status: 400,
-      }
+      },
     );
   }
 
@@ -28,14 +29,14 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching cards:", error);
+    logger.error("Error fetching cards:", error);
     return new NextResponse(JSON.stringify({ error: "Can't fetch cards" }), {
       status: 404,
     });
   }
 
   if (!cards) {
-    console.log("No cards found");
+    logger.log("No cards found");
     return new NextResponse(JSON.stringify({ error: "No cards found" }), {
       status: 404,
     });
@@ -47,6 +48,6 @@ export async function POST(request: NextRequest) {
     }),
     {
       status: 200,
-    }
+    },
   );
 }

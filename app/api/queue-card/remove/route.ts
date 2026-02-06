@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: Request) {
   const { id } = await req.json();
@@ -26,13 +27,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { message: "Card set removed successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    console.error("Error removing card set:", error);
+    logger.error("Error removing card set:", error);
     return NextResponse.json(
       { error: "Failed to remove card set" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

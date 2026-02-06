@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
       JSON.stringify({ error: "Invalid or missing 'id' parameter" }),
       {
         status: 400,
-      }
+      },
     );
   }
 
@@ -36,17 +37,17 @@ export async function POST(request: NextRequest) {
       select: { id: true, title: true, processing: true },
     });
   } catch (error) {
-    console.error("Error fetching book:", error);
+    logger.error("Error fetching book:", error);
     return new NextResponse(
       JSON.stringify({ error: "Internal server error" }),
       {
         status: 500,
-      }
+      },
     );
   }
 
   if (!book) {
-    console.log("BOOK NOT FOUND");
+    logger.log("BOOK NOT FOUND");
     return new NextResponse(JSON.stringify({ error: "Book not found" }), {
       status: 404,
     });
@@ -61,6 +62,6 @@ export async function POST(request: NextRequest) {
     }),
     {
       status: 200,
-    }
+    },
   );
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     return new NextResponse(JSON.stringify({ id: book.id }), { status: 200 });
   } catch (error) {
-    console.error("Error creating book:", error);
+    logger.error("Error creating book:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
