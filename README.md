@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Future Notes
+
+## Todo
+
+- Add an ai manager to allow other ais
+- Add deletion of podcast wav files
+- Add security checking for users on api endpoints
+- Add better chat ui functionality
+- Add a way to delete/modify a podcast
+
 ## Getting Started
 
 First, run the development server:
