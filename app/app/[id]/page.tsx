@@ -24,14 +24,14 @@ export default function CardSet() {
     async function loadCardSet() {
       if (typeof params.id !== "string") {
         setLoading(false);
-        router.push("/");
+        router.push("/app");
         return;
       }
       const fetchedSet = await fetchBookSet(params.id);
       if (fetchedSet) {
         setBook(fetchedSet);
       } else {
-        router.push("/");
+        router.push("/app");
       }
       setLoading(false);
     }
@@ -226,10 +226,54 @@ export default function CardSet() {
           setBook(updatedSet);
         }
       } else {
-        alert("Failed to generate flashcards");
+        const error = (await response.json()).error;
+        if (error) {
+          alert(error);
+        }
       }
     } catch (error) {
       alert("Error generating flashcards");
+    }
+
+    setCreatingAi(null);
+  }
+
+  async function generatePodcast() {
+    // Check if book is loaded
+    if (!book) return;
+
+    // Check if AI is already being created
+    if (creatingAi !== null) return;
+
+    setCreatingAi("Generating...");
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/ai/generatePodcast`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            bookId: book.id,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        const updatedSet = await fetchBookSet(book.id, true);
+        if (updatedSet) {
+          setBook(updatedSet);
+        }
+      } else {
+        const error = (await response.json()).error;
+        if (error) {
+          alert(error);
+        }
+      }
+    } catch (error) {
+      alert("Error generating podcast");
     }
 
     setCreatingAi(null);
@@ -578,6 +622,13 @@ export default function CardSet() {
               >
                 <h3 className="text-xl font-semibold mb-2">Flash Cards</h3>
               </div>
+
+              <div
+                className="bg-white/10 p-4 rounded-lg aspect-square cursor-pointer"
+                onClick={generatePodcast}
+              >
+                <h3 className="text-xl font-semibold mb-2">Podcast</h3>
+              </div>
             </div>
 
             {/* Generated AI Content */}
@@ -593,7 +644,7 @@ export default function CardSet() {
                     onClick={() =>
                       card_set.processing
                         ? null
-                        : router.push(`/${book.id}/cards/${card_set.id}`)
+                        : router.push(`/app/${book.id}/cards/${card_set.id}`)
                     }
                     className={`block bg-white/10 p-4 rounded-lg hover:bg-white/20 transition-colors ${
                       card_set.processing
@@ -619,6 +670,43 @@ export default function CardSet() {
                       <PiDotsThreeVerticalBold size={24} />
                     </button>
                   )}
+                </div>
+              ))}
+              {book.podcasts.map((podcast, index) => (
+                <div
+                  key={podcast.id}
+                  className="relative group bg-white/10 p-4 rounded-lg hover:bg-white/20 transition-colors"
+                >
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row justify-between items-center">
+                      <h3 className="text-xl font-semibold">
+                        {podcast.title}
+                      </h3>
+                      <button
+                        className="p-2 hover:bg-white/10 rounded-full cursor-pointer z-10"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          // openCardOptions(podcast.id);
+                        }}
+                      >
+                        <PiDotsThreeVerticalBold size={24} />
+                      </button>
+                    </div>
+                    {podcast.processing ? (
+                      <div className="animate-pulse text-gray-400">
+                        Generating audio...
+                      </div>
+                    ) : (
+                      <audio
+                        controls
+                        className="w-full h-8 mt-2 accent-blue-600"
+                        src={podcast.audio || ""}
+                      >
+                        Your browser does not support the audio element.
+                      </audio>
+                    )}
+                  </div>
                 </div>
               ))}
               {creatingAi && typeof creatingAi === "string" && (

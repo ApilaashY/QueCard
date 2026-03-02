@@ -1,7 +1,7 @@
 /** @jest-environment node */
 import { POST } from "../route";
 import { prisma } from "@/lib/prisma";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 // Mock the modules
 jest.mock("@/lib/prisma", () => ({
@@ -24,13 +24,13 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-jest.mock("@google/generative-ai", () => {
+jest.mock("@google/genai", () => {
   const mockGenerateContent = jest.fn();
   return {
-    GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
-      getGenerativeModel: jest.fn().mockImplementation(() => ({
+    GoogleGenAI: jest.fn().mockImplementation(() => ({
+      models: {
         generateContent: mockGenerateContent,
-      })),
+      },
     })),
   };
 });
@@ -74,14 +74,9 @@ describe("POST /api/queue-card/edit", () => {
     ]);
 
     // 5. Mock Gemini response
-    const mockModel = new GoogleGenerativeAI("test").getGenerativeModel({
-      model: "",
-    });
+    const mockModel = new GoogleGenAI({ apiKey: "test" }).models;
     (mockModel.generateContent as jest.Mock).mockResolvedValue({
-      response: {
-        text: () =>
-          "New Question\nNew Answer\n\nAnother Question\nAnother Answer",
-      },
+      text: "New Question\nNew Answer\n\nAnother Question\nAnother Answer",
     });
 
     const request = createMockRequest({
@@ -165,10 +160,7 @@ describe("POST /api/queue-card/edit", () => {
     (prisma.document_chunks.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.cards.findMany as jest.Mock).mockResolvedValue([]);
 
-    // Force Gemini error
-    const mockModel = new GoogleGenerativeAI("test").getGenerativeModel({
-      model: "",
-    });
+    const mockModel = new GoogleGenAI({ apiKey: "test" }).models;
     (mockModel.generateContent as jest.Mock).mockRejectedValue(
       new Error("AI error"),
     );

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: Request) {
   const { bookId, setId, prompt } = await req.json();
@@ -79,19 +79,19 @@ export async function POST(req: Request) {
       },
     });
 
-    const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    const model = genAi.getGenerativeModel({ model: "gemini-3-flash-preview" });
-
-    const response = await model.generateContent(
-      "Please update the following flashcards based on the request and the context related to the flashcards. Make sure that when updating the flashcards, do not change the number of flash cards. Make sure the questions are clear and concise and the answers are detailed. You are allowed to use Latex if needed but no other formatting is allowed. The flashcards should include important content relavent to the context. Output the flashcard by returning a long string of which it goes question, newline, answer, newline, newline, next question. Previous Flash Cards:" +
-        flashCards +
+    const genAi = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const response = await genAi.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents:
+        "Please update the following flashcards based on the request and the context related to the flashcards. Make sure that when updating the flashcards, do not change the number of flash cards. Make sure the questions are clear and concise and the answers are detailed. You are allowed to use Latex if needed but no other formatting is allowed. The flashcards should include important content relavent to the context. Output the flashcard by returning a long string of which it goes question, newline, answer, newline, newline, next question. Previous Flash Cards:" +
+        JSON.stringify(flashCards) + // Ensure array is stringified
         "\n\nPrompt: " +
         prompt +
         "\n\nContext: " +
-        context,
-    );
+        context.join("\n"), // Ensure context is stringified properly
+    });
 
-    const flashcardString = response.response.text();
+    const flashcardString = response.text || "";
 
     try {
       const flashcards = flashcardString.split("\n\n");
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
         },
       });
 
-      flashcards.forEach(async (flashcard, index) => {
+      flashcards.forEach(async (flashcard: string, index: number) => {
         const [question, answer] = flashcard.split("\n");
         await prisma.cards.create({
           data: {

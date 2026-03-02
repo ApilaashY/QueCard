@@ -18,6 +18,9 @@ jest.mock("@/lib/prisma", () => ({
     card_sets: {
       findMany: jest.fn(),
     },
+    podcasts: {
+      findMany: jest.fn(),
+    },
   },
 }));
 
@@ -41,11 +44,13 @@ describe("POST /api/queue-card/fetchSet", () => {
       { user: "Hello", ai_response: "Hi", created_at: new Date() },
     ];
     const mockCardSets = [{ id: "set-1", title: "Set 1", processing: false }];
+    const mockPodcasts = [{ id: "set-1", title: "Set 1", processing: false }];
 
     (prisma.books.findUnique as jest.Mock).mockResolvedValue(mockBook);
     (prisma.documents.findMany as jest.Mock).mockResolvedValue(mockDocuments);
     (prisma.chats.findMany as jest.Mock).mockResolvedValue(mockChats);
     (prisma.card_sets.findMany as jest.Mock).mockResolvedValue(mockCardSets);
+    (prisma.podcasts.findMany as jest.Mock).mockResolvedValue(mockPodcasts);
 
     const request = createMockRequest({ id: bookId });
     const response = await POST(request);
@@ -59,6 +64,7 @@ describe("POST /api/queue-card/fetchSet", () => {
       documents: mockDocuments,
       chats: JSON.parse(JSON.stringify(mockChats)), // Date will be serialized
       card_sets: mockCardSets,
+      podcasts: mockPodcasts,
     });
     expect(response.status).toBe(200);
   });

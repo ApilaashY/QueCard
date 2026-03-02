@@ -1,10 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
 export async function POST(request: NextRequest) {
-  console.log("started processing");
   const { bookId } = await request.json();
 
   if (!bookId || typeof bookId !== "string") {
@@ -20,10 +19,10 @@ export async function POST(request: NextRequest) {
     await redis.expire(rateLimitKey, 3600); // 1 hour window
   }
 
-  if (currentCount > 5) {
+  if (currentCount >= 5 && process.env.DEV !== "true") {
     return NextResponse.json(
       { error: "Rate limit exceeded. Try again in an hour." },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -42,10 +41,15 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  if (!documents) {
+  if (!documents || documents.length === 0) {
+    await prisma.card_sets.delete({
+      where: {
+        id: cardSet.id,
+      },
+    });
     return NextResponse.json(
-      { error: "There are no documents for this book" },
-      { status: 404 }
+      { error: "No media to generate flashcards from" },
+      { status: 404 },
     );
   }
 
@@ -63,15 +67,16 @@ export async function POST(request: NextRequest) {
     context.push(...documentChunks.map((chunk) => chunk.data));
   }
 
-  const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-  const model = genAi.getGenerativeModel({ model: "gemini-3-flash-preview" });
+  const genAi = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  const response = await model.generateContent(
-    "Please turn the following context into 10 flashcards. Make sure the questions are clear and concise and the answers are detailed. You are allowed to use Latex if needed but no other formatting is allowed. The flashcards should include important content relavent to the context. Output the flashcard by returning a long string of which it goes question, newline, answer, newline, newline, next question.Context: " +
-      context
-  );
+  const response = await genAi.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents:
+      "Please turn the following context into 10 flashcards. Make sure the questions are clear and concise and the answers are detailed. You are allowed to use Latex if needed but no other formatting is allowed. The flashcards should include important content relavent to the context. Output the flashcard by returning a long string of which it goes question, newline, answer, newline, newline, next question.Context: " +
+      context,
+  });
 
-  const flashcardString = response.response.text();
+  const flashcardString = response.text || "";
 
   try {
     const flashcards = flashcardString.split("\n\n");
@@ -100,19 +105,22 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { message: "Flashcards generated successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     // Remove card set
-    await prisma.card_sets.delete({
-      where: {
-        id: cardSet.id,
-      },
-    });
+    try {
+      await prisma.card_sets.delete({
+        where: {
+          id: cardSet.id,
+        },
+      });
+    } catch (error) {}
+
     console.error("Error creating card set:", error);
     return NextResponse.json(
       { error: "Failed to create card set" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

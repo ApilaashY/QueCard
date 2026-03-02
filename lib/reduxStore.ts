@@ -6,6 +6,7 @@ export interface Book {
   documents: Document[];
   chats: Chat[];
   card_sets: CardSet[];
+  podcasts: Podcast[];
 }
 
 export interface Document {
@@ -23,12 +24,22 @@ export interface CardSet {
   id: string;
   title: string;
   processing: boolean;
+  index: number;
 }
 
 export interface Card {
   id: string;
   question: string;
   answer: string;
+}
+
+export interface Podcast {
+  id: string;
+  title: string;
+  audio: string;
+  script: string;
+  processing: boolean;
+  index: number;
 }
 
 const cardSets = createSlice({
@@ -68,7 +79,7 @@ export const store = configureStore({
 // Function to get a specfic card set from the api
 export async function fetchBookSet(
   id: string,
-  forceDownload: boolean = false
+  forceDownload: boolean = false,
 ): Promise<Book | undefined> {
   // Try to get the card set from redux store first
   const state = store.getState();
@@ -88,7 +99,7 @@ export async function fetchBookSet(
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (response.status !== 200) {
@@ -118,7 +129,7 @@ export async function fetchCardSet(id: string): Promise<Card[] | undefined> {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (response.status !== 200) {

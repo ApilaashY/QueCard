@@ -18,7 +18,7 @@ export default function CardPage() {
       const cardsData = await fetchCardSet(cardId as string);
 
       if (cardsData === undefined) {
-        router.push(`/${id}`);
+        router.push(`/app/${id}`);
         return;
       }
 
@@ -76,7 +76,7 @@ export default function CardPage() {
       {/* Header & Back Button */}
       <div className="absolute top-8 left-8">
         <button
-          onClick={() => router.push(`/${id}`)}
+          onClick={() => router.push(`/app/${id}`)}
           className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
         >
           ← Back to Library

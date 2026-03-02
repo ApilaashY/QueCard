@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   const { id } = await request.json();
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
   let documents;
   let chats;
   let card_sets;
+  let podcasts;
   try {
     book = await prisma.books.findUnique({
       where: { id },
@@ -35,6 +37,17 @@ export async function POST(request: NextRequest) {
     card_sets = await prisma.card_sets.findMany({
       where: { book_id: id },
       select: { id: true, title: true, processing: true },
+    });
+    podcasts = await prisma.podcasts.findMany({
+      where: { book_id: id },
+    });
+
+    // Update the podcast audio url to the proxy url
+    podcasts = podcasts.map((podcast) => {
+      if (podcast.audio) {
+        podcast.audio = `/api/podcasts/audio/${podcast.id}`;
+      }
+      return podcast;
     });
   } catch (error) {
     logger.error("Error fetching book:", error);
@@ -59,6 +72,7 @@ export async function POST(request: NextRequest) {
       documents: documents,
       chats: chats,
       card_sets: card_sets,
+      podcasts: podcasts,
     }),
     {
       status: 200,

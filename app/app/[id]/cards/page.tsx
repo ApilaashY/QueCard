@@ -10,10 +10,10 @@ export default function CardsPage() {
 
   useEffect(() => {
     if (!id) {
-      router.push("/");
+      router.push("/app");
       return;
     }
-    router.push(`/${id}`);
+    router.push(`/app/${id}`);
   }, [id]);
 
   return <></>;

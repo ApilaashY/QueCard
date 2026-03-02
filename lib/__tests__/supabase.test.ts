@@ -1,4 +1,4 @@
-import { supabase } from "../supabase";
+import { supabase } from "../supabase/client";
 
 describe("Supabase Client", () => {
   it("should be defined", () => {

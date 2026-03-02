@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   await redis.del(`user_sets:${userId}`);
 
   try {
-    const book = await prisma.books.findUniqueOrThrow({
+    await prisma.books.findUniqueOrThrow({
       where: { id: id },
     });
   } catch (_) {
@@ -33,17 +33,40 @@ export async function POST(request: NextRequest) {
       })
     ).map((doc) => doc.id);
 
+    // Delete all document chunks
     documents.forEach(async (docId) => {
       await prisma.document_chunks.deleteMany({
         where: { document_id: docId },
       });
     });
 
+    // Delete all documents
     await prisma.documents.deleteMany({
       where: { book_id: id },
     });
 
+    // Delete all chats
     await prisma.chats.deleteMany({
+      where: { book_id: id },
+    });
+
+    // Delete all podcasts
+    await prisma.podcasts.deleteMany({
+      where: { book_id: id },
+    });
+
+    // Get card sets and delete them
+    const cardSets = await prisma.card_sets.findMany({
+      where: { book_id: id },
+    });
+
+    cardSets.forEach(async (cardSet) => {
+      await prisma.cards.deleteMany({
+        where: { card_set_id: cardSet.id },
+      });
+    });
+
+    await prisma.card_sets.deleteMany({
       where: { book_id: id },
     });
 
