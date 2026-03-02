@@ -164,10 +164,10 @@ function Sidebar({
             !params?.id && "bg-gray-800"
           }`}
         >
-          Create New Flashcards
+          Create New Book
         </Link>
 
-        <h2>Card Sets</h2>
+        <h2>Books</h2>
         <div>
           {sets &&
             sets.map((set) => (

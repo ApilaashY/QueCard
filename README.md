@@ -6,9 +6,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 - Add an ai manager to allow other ais
 - Add deletion of podcast wav files
+- Add better mixing of podcasts and flashcards
 - Add security checking for users on api endpoints
 - Add better chat ui functionality
 - Add a way to delete/modify a podcast
+- Add better semantic checking to make sure that the prompt given to the ai to update flash cards does not go against the original prompt's rules
 
 ## Getting Started
 
