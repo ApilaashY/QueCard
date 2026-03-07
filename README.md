@@ -11,6 +11,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 - Add better chat ui functionality
 - Add a way to delete/modify a podcast
 - Add better semantic checking to make sure that the prompt given to the ai to update flash cards does not go against the original prompt's rules
+- Better spacing on left sidebar
+- Make the books on the left sidebar update when a book is created
 
 ## Getting Started
 

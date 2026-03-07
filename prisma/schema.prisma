@@ -71,7 +71,7 @@ model cards {
   question    String?
   answer      String?
   card_set_id String?    @db.Uuid
-  order       BigInt
+  order       Int
   card_sets   card_sets? @relation(fields: [card_set_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
