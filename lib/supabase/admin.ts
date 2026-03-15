@@ -15,3 +15,16 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
     persistSession: false,
   },
 });
+
+export async function tokenToUser(token: string | null | undefined) {
+  if (!token) {
+    return null;
+  }
+  const { data } = await supabaseAdmin.auth.getUser(token.split(" ")[1]);
+
+  if (!data || !data.user) {
+    return null;
+  }
+
+  return data.user.id;
+}

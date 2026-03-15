@@ -40,6 +40,10 @@ jest.mock("@/lib/redis", () => ({
   },
 }));
 
+jest.mock("@/lib/supabase/admin", () => ({
+  tokenToUser: jest.fn().mockResolvedValue("98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb"),
+}));
+
 describe("POST /api/queue-card/deleteSet", () => {
   const userId = "98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb";
 
@@ -50,6 +54,7 @@ describe("POST /api/queue-card/deleteSet", () => {
   const createMockRequest = (body: Record<string, unknown>) => {
     return new NextRequest("http://localhost/api/queue-card/deleteSet", {
       method: "POST",
+      headers: { Authorization: "Bearer dummy-token" },
       body: JSON.stringify(body),
     });
   };

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
 import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: Request) {
@@ -140,7 +139,7 @@ export async function POST(req: Request) {
         },
       });
 
-      logger.error("Error editing card set:", error);
+      console.error("Error editing card set:", error);
       return NextResponse.json(
         { error: "Failed to edit card set" },
         { status: 500 },
@@ -157,7 +156,7 @@ export async function POST(req: Request) {
       },
     });
 
-    logger.error("Error editing card set:", error);
+    console.error("Error editing card set:", error);
     return NextResponse.json(
       { error: "Failed to edit card set" },
       { status: 500 },

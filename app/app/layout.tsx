@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Provider } from "react-redux";
 import { store } from "@/lib/reduxStore";
 import { MdMenu } from "react-icons/md";
+import { supabase } from "@/lib/supabase/client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,31 +31,58 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [sets, setSets] = useState<{ id: string; title: string }[] | null>(
-    null
+    null,
   );
   const router = useRouter();
   const params = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarWidthPct, setSidebarWidthPct] = useState(25); // percentage of viewport
+  const [sidebarWidthPct, setSidebarWidthPct] = useState(() => {
+    if (typeof window === "undefined") return 25;
+    const stored = localStorage.getItem("sidebarWidthPct");
+    return stored ? parseInt(stored) : 25;
+  });
   const isDragging = useRef(false);
 
+  // Redirect to login when session ends
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) {
+          router.push("/login");
+        }
+      },
+    );
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
   // Gets the sets when the page loads or when the id changes
-  useEffect( () => {
+  // Also constantly checks on every page if the user is logged in
+  useEffect(() => {
     async function fetchSets() {
+      const data = await supabase.auth.getSession();
+
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/fetchSets`,
           {
             method: "POST",
-          }
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${data?.data.session?.access_token}`,
+            },
+          },
         );
-        const data = await response.json();
-        setSets(data.sets);
+        if (response.ok) {
+          response.json().then((data) => {
+            setSets(data.sets);
+          });
+        } else {
+          router.push("/login");
+        }
       } catch (error) {
         console.error("Error fetching card sets:", error);
       }
     }
-    
     fetchSets();
   }, [params.id]);
 
@@ -65,21 +93,23 @@ export default function RootLayout({
     if (!confirmDelete) return;
 
     try {
+      const user = await supabase.auth.getSession();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/deleteSet`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.data.session?.access_token}`,
           },
           body: JSON.stringify({ id: params.id }),
-        }
+        },
       );
       const data = await response.json();
       if (data.success) {
         // Remove the deleted set from state
         setSets((prevSets) =>
-          prevSets ? prevSets.filter((set) => set.id !== params.id) : null
+          prevSets ? prevSets.filter((set) => set.id !== params.id) : null,
         );
         router.push("/app");
       }
@@ -90,11 +120,10 @@ export default function RootLayout({
 
   return (
     <div className="relative flex h-viewport lg:h-screen flex-col lg:flex-row justify-between gap-3 duration-200">
-      <div className="absolute top-0 left-0 z-50 lg:hidden">
+      <div className="sticky top-0 left-0 z-50 lg:hidden">
         <MdMenu
-          className="w-12 h-12 pt-2 pl-2 cursor-pointer"
+          className="w-8 h-8 pt-2 pl-2 cursor-pointer"
           onClick={() => {
-            console.log(sidebarOpen);
             setSidebarOpen((open) => !open);
           }}
         />
@@ -110,7 +139,7 @@ export default function RootLayout({
       ></div>
       {/* Mobile Side Bar */}
       <div
-        className={`lg:hidden absolute top-0 left-0 w-[70%] h-screen bg-black/80 flex flex-col rounded-lg p-8 max-w-2xl z-20 transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-0 left-0 w-[70%] h-screen bg-black/80 flex flex-col rounded-lg p-8 max-w-2xl z-20 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -142,8 +171,12 @@ export default function RootLayout({
             const onMouseMove = (moveEvent: MouseEvent) => {
               const delta = moveEvent.clientX - startX;
               if (Math.abs(delta) > 3) isDragging.current = true;
-              const newPct = startWidth + (delta / window.innerWidth) * 100;
-              setSidebarWidthPct(Math.min(Math.max(newPct, 10), 40));
+              const newPct = Math.min(
+                Math.max(startWidth + (delta / window.innerWidth) * 100, 10),
+                40,
+              );
+              localStorage.setItem("sidebarWidthPct", newPct.toString());
+              setSidebarWidthPct(newPct);
             };
 
             const onMouseUp = () => {
@@ -200,25 +233,27 @@ function Sidebar({
         <div className="flex flex-col gap-1">
           {sets &&
             sets.map((set) => (
-                <Link key={set.id} href={`/app/${set.id}`}>
-              <div
-                className={`rounded cursor-pointer flex justify-between items-center gap-2 px-4 py-2 ${
-                  params?.id === set.id && "bg-gray-800"
-                }`}
-              >
-                <h3 className="m-0 overflow-hidden text-ellipsis">{set.title}</h3>
-                <button
-                  className={`${
-                    params?.id === set.id
-                      ? "bg-gray-900 cursor-pointer"
-                      : "hidden"
+              <Link key={set.id} href={`/app/${set.id}`}>
+                <div
+                  className={`rounded cursor-pointer flex justify-between items-center gap-2 ${
+                    params?.id === set.id && "bg-gray-800"
                   }`}
-                  onClick={deleteSet}
                 >
-                  Delete
-                </button>
-              </div>
-                </Link>
+                  <h3 className="m-0 overflow-hidden text-ellipsis px-4 py-2">
+                    {set.title}
+                  </h3>
+                  <button
+                    className={`${
+                      params?.id === set.id
+                        ? "bg-gray-900 cursor-pointer px-4 py-2"
+                        : "hidden"
+                    }`}
+                    onClick={deleteSet}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </Link>
             ))}
         </div>
       </div>

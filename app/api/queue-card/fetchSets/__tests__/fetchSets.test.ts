@@ -2,7 +2,7 @@
 import { POST } from "../route";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 // Mock the modules
 jest.mock("@/lib/prisma", () => ({
@@ -23,6 +23,12 @@ jest.mock("@/lib/redis", () => ({
 // Mock NextResponse.json
 jest.spyOn(NextResponse, "json");
 
+jest.mock("@/lib/supabase/admin", () => ({
+  tokenToUser: jest
+    .fn()
+    .mockResolvedValue("98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb"),
+}));
+
 describe("POST /api/queue-card/fetchSets", () => {
   const userId = "98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb";
   const cacheKey = `user_sets:${userId}`;
@@ -31,11 +37,17 @@ describe("POST /api/queue-card/fetchSets", () => {
     jest.clearAllMocks();
   });
 
+  const createMockRequest = () =>
+    new NextRequest("http://localhost/api/queue-card/fetchSets", {
+      method: "POST",
+      headers: { Authorization: "Bearer dummy-token" },
+    });
+
   it("should return sets from cache if available", async () => {
     const mockSets = [{ id: "1", title: "Cached Set" }];
     (redis.get as jest.Mock).mockResolvedValue(JSON.stringify(mockSets));
 
-    const response = await POST();
+    const response = await POST(createMockRequest());
     const data = await response.json();
 
     expect(redis.get).toHaveBeenCalledWith(cacheKey);
@@ -49,7 +61,7 @@ describe("POST /api/queue-card/fetchSets", () => {
     (redis.get as jest.Mock).mockResolvedValue(null);
     (prisma.books.findMany as jest.Mock).mockResolvedValue(mockSets);
 
-    const response = await POST();
+    const response = await POST(createMockRequest());
     const data = await response.json();
 
     expect(redis.get).toHaveBeenCalledWith(cacheKey);
@@ -72,7 +84,7 @@ describe("POST /api/queue-card/fetchSets", () => {
     (redis.get as jest.Mock).mockRejectedValue(new Error("Redis down"));
     (prisma.books.findMany as jest.Mock).mockResolvedValue(mockSets);
 
-    const response = await POST();
+    const response = await POST(createMockRequest());
     const data = await response.json();
 
     expect(prisma.books.findMany).toHaveBeenCalled();
@@ -86,7 +98,7 @@ describe("POST /api/queue-card/fetchSets", () => {
       new Error("DB error"),
     );
 
-    const response = await POST();
+    const response = await POST(createMockRequest());
 
     expect(response.status).toBe(500);
     const text = await response.text();

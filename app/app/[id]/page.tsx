@@ -447,7 +447,7 @@ export default function CardSet() {
       <div className="w-full flex flex-col h-full">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold mb-3">{book?.title}</h1>
+          <h1 className="text-4xl font-bold mb-3 wrap-break-word">{book?.title}</h1>
         </div>
 
         {/* Options Grid */}

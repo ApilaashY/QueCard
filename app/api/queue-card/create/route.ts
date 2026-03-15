@@ -1,27 +1,34 @@
 import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
+import { tokenToUser } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   const { title } = await request.json();
+  const userId = await tokenToUser(request.headers.get("Authorization"));
+
+  console.log(request.headers.get("Authorization"));
+  console.log("dflksfs", userId);
+
+  if (!userId) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
 
   let book;
   try {
     book = await prisma.books.create({
       data: {
         title: title,
-        owner: "98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb", // Temporary hardcoded user ID
+        owner: userId,
       },
     });
 
     // Invalidate cache
-    const userId = "98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb";
     await redis.del(`user_sets:${userId}`);
 
     return new NextResponse(JSON.stringify({ id: book.id }), { status: 200 });
   } catch (error) {
-    logger.error("Error creating book:", error);
+    console.error("Error creating book:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

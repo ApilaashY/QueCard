@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
 export default function Home() {
   const router = useRouter();
@@ -13,17 +14,22 @@ export default function Home() {
       }
 
       bookName = prompt(
-        "Book name cannot be empty. Please enter a name for the book:"
+        "Book name cannot be empty. Please enter a name for the book:",
       );
     }
 
     try {
+      const user = await supabase.auth.getSession();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/create`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.data.session?.access_token}`,
+          },
           body: JSON.stringify({ title: bookName }),
-        }
+        },
       );
 
       const result = await response.json();

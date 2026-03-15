@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -50,7 +49,7 @@ export async function POST(request: NextRequest) {
       return podcast;
     });
   } catch (error) {
-    logger.error("Error fetching book:", error);
+    console.error("Error fetching book:", error);
     return new NextResponse(
       JSON.stringify({ error: "Internal server error" }),
       {
@@ -60,7 +59,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!book) {
-    logger.log("BOOK NOT FOUND");
+    console.log("BOOK NOT FOUND");
     return new NextResponse(JSON.stringify({ error: "Book not found" }), {
       status: 404,
     });
