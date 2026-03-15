@@ -33,14 +33,13 @@ export default function RootLayout({
     null
   );
   const router = useRouter();
-  const loading = useRef(false);
   const params = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarWidthPct, setSidebarWidthPct] = useState(25); // percentage of viewport
+  const isDragging = useRef(false);
 
-  useEffect(() => {
-    if (loading.current || sets !== null) return;
-    loading.current = true;
-
+  // Gets the sets when the page loads or when the id changes
+  useEffect( () => {
     async function fetchSets() {
       try {
         const response = await fetch(
@@ -55,12 +54,15 @@ export default function RootLayout({
         console.error("Error fetching card sets:", error);
       }
     }
-
+    
     fetchSets();
-  }, [sets]);
+  }, [params.id]);
 
   async function deleteSet() {
     if (!params.id) return;
+
+    const confirmDelete = confirm("Are you sure you want to delete this set?");
+    if (!confirmDelete) return;
 
     try {
       const response = await fetch(
@@ -117,15 +119,41 @@ export default function RootLayout({
 
       {/* Desktop Side Bar */}
       <div
-        className={`hidden lg:flex absolute left-0 top-0 h-full z-10 flex-col bg-black/30 rounded-lg p-8 w-[25%] transition-transform duration-300 ease-in-out ${
+        className={`hidden lg:flex absolute left-0 top-0 h-full z-10 flex-col bg-black/30 rounded-lg p-8 transition-transform duration-300 ease-in-out ${
           !sidebarOpen ? "lg:translate-x-0" : "lg:-translate-x-full"
         }`}
+        style={{ width: `${sidebarWidthPct}%` }}
       >
         <Sidebar sets={sets} deleteSet={deleteSet} params={params} />
 
+        {/* Drag handle */}
         <div
-          className="bg-gray-200 w-fit h-fit absolute top-1/2 -translate-y-1/2 -translate-x-1/2 left-full rounded-full cursor-pointer"
-          onClick={() => setSidebarOpen((open) => !open)}
+          className="bg-gray-200 w-fit h-fit absolute top-1/2 -translate-y-1/2 -translate-x-1/2 left-full rounded-full cursor-col-resize select-none"
+          onClick={() => {
+            if (!isDragging.current) setSidebarOpen((open) => !open);
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isDragging.current = false;
+
+            const startX = e.clientX;
+            const startWidth = sidebarWidthPct;
+
+            const onMouseMove = (moveEvent: MouseEvent) => {
+              const delta = moveEvent.clientX - startX;
+              if (Math.abs(delta) > 3) isDragging.current = true;
+              const newPct = startWidth + (delta / window.innerWidth) * 100;
+              setSidebarWidthPct(Math.min(Math.max(newPct, 10), 40));
+            };
+
+            const onMouseUp = () => {
+              window.removeEventListener("mousemove", onMouseMove);
+              window.removeEventListener("mouseup", onMouseUp);
+            };
+
+            window.addEventListener("mousemove", onMouseMove);
+            window.addEventListener("mouseup", onMouseUp);
+          }}
         >
           <MdMenu className="rotate-90 text-black w-5 h-5 p-1" />
         </div>
@@ -133,8 +161,9 @@ export default function RootLayout({
       {/* Desktop Side Bar Flex Placeholder */}
       <div
         className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-          !sidebarOpen ? "w-[25%]" : "w-0"
+          sidebarOpen ? "w-0" : ""
         }`}
+        style={{ width: sidebarOpen ? 0 : `${sidebarWidthPct}%` }}
       ></div>
 
       <Provider store={store}>
@@ -168,22 +197,20 @@ function Sidebar({
         </Link>
 
         <h2>Books</h2>
-        <div>
+        <div className="flex flex-col gap-1">
           {sets &&
             sets.map((set) => (
+                <Link key={set.id} href={`/app/${set.id}`}>
               <div
-                key={set.id}
-                className={`rounded cursor-pointer flex justify-between gap-2 ${
+                className={`rounded cursor-pointer flex justify-between items-center gap-2 px-4 py-2 ${
                   params?.id === set.id && "bg-gray-800"
                 }`}
               >
-                <Link href={`/app/${set.id}`} className="px-4 py-2">
-                  {set.title}
-                </Link>
+                <h3 className="m-0 overflow-hidden text-ellipsis">{set.title}</h3>
                 <button
                   className={`${
                     params?.id === set.id
-                      ? "bg-gray-900 px-4 py-2 cursor-pointer"
+                      ? "bg-gray-900 cursor-pointer"
                       : "hidden"
                   }`}
                   onClick={deleteSet}
@@ -191,6 +218,7 @@ function Sidebar({
                   Delete
                 </button>
               </div>
+                </Link>
             ))}
         </div>
       </div>
