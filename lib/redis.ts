@@ -9,3 +9,8 @@ const getRedisUrl = () => {
 };
 
 export const redis = new Redis(getRedisUrl());
+
+redis.on("error", (err) => {
+  console.error("[Redis Error]:", err);
+});
+

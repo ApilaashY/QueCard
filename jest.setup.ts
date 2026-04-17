@@ -9,3 +9,13 @@ global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 process.env.GEMINI_API_KEY = "test-api-key";
 process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
 process.env.SUPABASE_ANON_KEY = "test-anon-key";
+
+// TODO look at this and maybe remove it after diagnosing tests
+// Suppress expected console.error noise from deliberate error-path tests
+beforeEach(() => {
+  jest.spyOn(console, "error").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});

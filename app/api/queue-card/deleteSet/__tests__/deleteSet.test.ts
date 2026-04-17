@@ -29,6 +29,8 @@ jest.mock("@/lib/prisma", () => ({
       deleteMany: jest.fn(),
     },
     podcasts: {
+      findMany: jest.fn(),
+      delete: jest.fn(),
       deleteMany: jest.fn(),
     },
   },
@@ -41,7 +43,9 @@ jest.mock("@/lib/redis", () => ({
 }));
 
 jest.mock("@/lib/supabase/admin", () => ({
-  tokenToUser: jest.fn().mockResolvedValue("98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb"),
+  tokenToUser: jest
+    .fn()
+    .mockResolvedValue("98fbe5d9-ebcd-4fd6-87b0-e29ef2042fbb"),
 }));
 
 describe("POST /api/queue-card/deleteSet", () => {
@@ -72,6 +76,7 @@ describe("POST /api/queue-card/deleteSet", () => {
       { id: "cs-1" },
       { id: "cs-2" },
     ]);
+    (prisma.podcasts.findMany as jest.Mock).mockResolvedValue([]);
 
     const request = createMockRequest({ id: bookId });
     const response = await POST(request);
@@ -105,7 +110,7 @@ describe("POST /api/queue-card/deleteSet", () => {
     expect(prisma.card_sets.deleteMany).toHaveBeenCalledWith({
       where: { book_id: bookId },
     });
-    expect(prisma.podcasts.deleteMany).toHaveBeenCalledWith({
+    expect(prisma.podcasts.findMany).toHaveBeenCalledWith({
       where: { book_id: bookId },
     });
     expect(prisma.books.delete).toHaveBeenCalledWith({ where: { id: bookId } });

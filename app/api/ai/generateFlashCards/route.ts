@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
           id: cardSet.id,
         },
       });
-    } catch (error) {}
+    } catch {}
 
     console.error("Error creating card set:", error);
     return NextResponse.json(

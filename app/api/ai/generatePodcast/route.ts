@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     await redis.expire(rateLimitKey, 3600); // 1 hour window
   }
 
-  if (currentCount >= 5 && process.env.DEV !== "true") {
+  if (currentCount >= 3 && process.env.DEV !== "true") {
     return NextResponse.json(
       { error: "Rate limit exceeded. Try again in an hour." },
       { status: 429 },
@@ -89,8 +89,10 @@ export async function POST(request: NextRequest) {
   const response = await genAi.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Given the context, generate a podcast script that is engaging and informative. The podcast should be around 5 minutes long and should cover the key topics in the context. The podcast should be conversational and easy to follow.
-    Make the podcast contain 2 hosts, Person 1 and Person 2. Format:
+    Make the podcast contain 2 distinct hosts, Person 1 and Person 2.
+    Only output the podcast script, nothing else.
     
+    Format:
     [Person 1]: "What person 1 says"
     [Person 2]: "What person 2 says"
     [Person 1]: ...
@@ -186,7 +188,7 @@ export async function POST(request: NextRequest) {
           id: podcast.id,
         },
       });
-    } catch (_) {}
+    } catch {}
 
     console.error("Error creating podcast:", error);
     return NextResponse.json(

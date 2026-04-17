@@ -25,11 +25,12 @@ export default function RootLayout({
   const router = useRouter();
   const params = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarWidthPct, setSidebarWidthPct] = useState(() => {
-    if (typeof window === "undefined") return 25;
-    const stored = localStorage.getItem("sidebarWidthPct");
-    return stored ? parseInt(stored) : 25;
-  });
+  const [sidebarWidthPct, setSidebarWidthPct] = useState(() =>
+    typeof window !== "undefined"
+      ? parseInt(localStorage.getItem("sidebarWidthPct") || "25")
+      : 25,
+  );
+
   const isDragging = useRef(false);
 
   // Redirect to login when session ends
@@ -42,7 +43,7 @@ export default function RootLayout({
       },
     );
     return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   // Gets the sets when the page loads or when the id changes
   // Also constantly checks on every page if the user is logged in
@@ -73,7 +74,7 @@ export default function RootLayout({
       }
     }
     fetchSets();
-  }, [params.id]);
+  }, [params.id, router]);
 
   async function deleteSet() {
     if (!params.id) return;

@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
   // Create the prompt with relevant chunks
   let prompt = `You are an AI assistant. Use the following document excerpts to answer the question at the end.
-  If the excerpts do not contain the answer, respond with "I don't know. Please do not add any extra formatting other than latex, if needed.
+  If the excerpts do not contain the answer, try to answer the question using your own knowledge and mention the fact that the answer is not from the excerpts. Please do not add any extra formatting other than latex, if needed.
   Try to keep answers short and to the point unless I ask for a detailed explanation. If you do not know the answer, please do not make one up."\n\n`;
   relevantChunks.forEach((chunk, index) => {
     prompt += `Excerpt ${index + 1}:\n${chunk.data}\n\n`;

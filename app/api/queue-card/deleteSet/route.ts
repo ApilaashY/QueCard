@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
-import { tokenToUser } from "@/lib/supabase/admin";
+import { supabaseAdmin, tokenToUser } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   const { id } = await request.json();
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     await prisma.books.findUniqueOrThrow({
       where: { id: id },
     });
-  } catch (_) {
+  } catch {
     return new NextResponse("Card set not found", { status: 404 });
   }
 
@@ -52,9 +52,17 @@ export async function POST(request: NextRequest) {
     });
 
     // Delete all podcasts
-    await prisma.podcasts.deleteMany({
+    const podcasts = await prisma.podcasts.findMany({
       where: { book_id: id },
     });
+    for (const podcast of podcasts) {
+      if (podcast.audio)
+        await supabaseAdmin.storage.from("Podcasts").remove([podcast.audio]);
+
+      await prisma.podcasts.delete({
+        where: { id: podcast.id },
+      });
+    }
 
     // Get card sets and delete them
     const cardSets = await prisma.card_sets.findMany({
@@ -76,7 +84,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (_) {
+  } catch {
     return new NextResponse("Can't find the card set or cards", {
       status: 500,
     });

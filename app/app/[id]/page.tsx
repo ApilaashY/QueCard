@@ -5,7 +5,6 @@ import { useEffect, useState, useRef } from "react";
 import { fetchBookSet, Book } from "@/lib/reduxStore";
 import { InlineMath, BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
-import Link from "next/link";
 import { PiDotsThreeVerticalBold } from "react-icons/pi";
 
 export default function CardSet() {
@@ -167,9 +166,22 @@ export default function CardSet() {
       'input[name="textinput"]',
     ) as HTMLInputElement;
     const message = messageInput?.value;
+    messageInput.value = ""; // Clear the input
     if (!message) return;
 
     try {
+      // Add the message to the chat history
+      setBook((prevBook) => {
+        if (!prevBook) return null;
+        return {
+          ...prevBook,
+          chats: [
+            ...prevBook.chats,
+            { id: "new", user: message, ai_response: "", created_at: "" },
+          ],
+        };
+      });
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/ai/sendChat`,
         {
@@ -231,7 +243,7 @@ export default function CardSet() {
           alert(error);
         }
       }
-    } catch (error) {
+    } catch {
       alert("Error generating flashcards");
     }
 
@@ -272,7 +284,7 @@ export default function CardSet() {
           alert(error);
         }
       }
-    } catch (error) {
+    } catch {
       alert("Error generating podcast");
     }
 
@@ -447,7 +459,9 @@ export default function CardSet() {
       <div className="w-full flex flex-col h-full">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold mb-3 wrap-break-word">{book?.title}</h1>
+          <h1 className="text-4xl font-bold mb-3 wrap-break-word">
+            {book?.title}
+          </h1>
         </div>
 
         {/* Options Grid */}
@@ -578,16 +592,25 @@ export default function CardSet() {
                     {chat.user}
                   </h3>
                   <div className="text-l font-semibold mb-1 pr-15">
-                    {chat.ai_response.split(/\$\$|\$/).map((part, i) => {
-                      if (i % 2 === 0) return <span key={i}>{part}</span>;
-                      if (
-                        part.startsWith("\n") ||
-                        chat.ai_response.split(/\$\$|\$/)[i - 1]?.endsWith("\n")
-                      ) {
-                        return <BlockMath key={i} math={part.trim()} />;
-                      }
-                      return <InlineMath key={i} math={part} />;
-                    })}
+                    {chat.ai_response === "" ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-blue-600 animate-pulse"></div>
+                        <span className="text-gray-400">Thinking...</span>
+                      </div>
+                    ) : (
+                      chat.ai_response.split(/\$\$|\$/).map((part, i) => {
+                        if (i % 2 === 0) return <span key={i}>{part}</span>;
+                        if (
+                          part.startsWith("\n") ||
+                          chat.ai_response
+                            .split(/\$\$|\$/)
+                            [i - 1]?.endsWith("\n")
+                        ) {
+                          return <BlockMath key={i} math={part.trim()} />;
+                        }
+                        return <InlineMath key={i} math={part} />;
+                      })
+                    )}
                   </div>
                 </div>
               ))}
@@ -672,16 +695,14 @@ export default function CardSet() {
                   )}
                 </div>
               ))}
-              {book.podcasts.map((podcast, index) => (
+              {book.podcasts.map((podcast) => (
                 <div
                   key={podcast.id}
                   className="relative group bg-white/10 p-4 rounded-lg hover:bg-white/20 transition-colors"
                 >
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-row justify-between items-center">
-                      <h3 className="text-xl font-semibold">
-                        {podcast.title}
-                      </h3>
+                      <h3 className="text-xl font-semibold">{podcast.title}</h3>
                       <button
                         className="p-2 hover:bg-white/10 rounded-full cursor-pointer z-10"
                         onClick={(e) => {
@@ -694,9 +715,18 @@ export default function CardSet() {
                       </button>
                     </div>
                     {podcast.processing ? (
-                      <div className="animate-pulse text-gray-400">
-                        Generating audio...
-                      </div>
+                      // Setup timer to later reload the data
+                      (setTimeout(async () => {
+                        const updatedSet = await fetchBookSet(book.id, true);
+                        if (updatedSet) {
+                          setBook(updatedSet);
+                        }
+                      }, 10000),
+                      (
+                        <div className="animate-pulse text-gray-400">
+                          Generating audio...
+                        </div>
+                      ))
                     ) : (
                       <audio
                         controls

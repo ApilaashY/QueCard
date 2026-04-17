@@ -14,7 +14,7 @@ export default function CardsPage() {
       return;
     }
     router.push(`/app/${id}`);
-  }, [id]);
+  }, [id, router]);
 
   return <></>;
 }
