@@ -127,10 +127,18 @@ export async function POST(request: NextRequest) {
   try {
     // Generate audio file
     const response = await genAi.models.generateContent({
-      model: "gemini-3.1-flash-preview-tts",
+      model: "gemini-3.1-flash-tts-preview",
       contents: [{ role: "user", parts: [{ text: script }] }],
       config: {
-        responseModalities: [Modality.AUDIO],
+        temperature: 1,
+        responseModalities: ["audio"],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: "Zephyr",
+            },
+          },
+        },
       },
     });
 
