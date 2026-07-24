@@ -1,0 +1,7 @@
+.husky
+.next
+.swc
+.vscode
+.env.server
+.coverage
+.node_modules

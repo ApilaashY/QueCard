@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  # Your Next.js Application
+  # Requires: supabase start (run separately via Supabase CLI)
+  web:
+    image: quecard-app:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Prisma → Supabase CLI postgres (running on host via `supabase start`)
+      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
+      - DIRECT_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
+      # Supabase Auth + Storage
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - SUPABASE_URL=http://host.docker.internal:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hj04zWl196z2-SBc0
+      - REDIS_URL=redis://my-redis-cache:6379
+    depends_on:
+      my-redis-cache:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Linux support (Mac works without this)
+
+  # Redis Cache
+  my-redis-cache:
+    image: redis:7-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:

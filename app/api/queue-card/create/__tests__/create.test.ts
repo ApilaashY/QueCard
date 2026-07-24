@@ -7,6 +7,9 @@ import { NextRequest } from "next/server";
 // Mock the modules
 jest.mock("@/lib/prisma", () => ({
   prisma: {
+    users: {
+      upsert: jest.fn(),
+    },
     books: {
       create: jest.fn(),
     },

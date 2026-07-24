@@ -50,24 +50,25 @@ export default function RootLayout({
   useEffect(() => {
     async function fetchSets() {
       const data = await supabase.auth.getSession();
+      const token = data?.data.session?.access_token;
+      
+      if (!token) return;
 
       try {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/queue-card/fetchSets`,
+          `${baseUrl}/api/queue-card/fetchSets`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${data?.data.session?.access_token}`,
+              Authorization: `Bearer ${token}`,
             },
           },
         );
         if (response.ok) {
-          response.json().then((data) => {
-            setSets(data.sets);
-          });
-        } else {
-          router.push("/login");
+          const result = await response.json();
+          setSets(result.sets);
         }
       } catch (error) {
         console.error("Error fetching card sets:", error);

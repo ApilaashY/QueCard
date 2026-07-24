@@ -7,15 +7,19 @@ export async function POST(request: NextRequest) {
   const { title } = await request.json();
   const userId = await tokenToUser(request.headers.get("Authorization"));
 
-  console.log(request.headers.get("Authorization"));
-  console.log("dflksfs", userId);
-
   if (!userId) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   let book;
   try {
+    // Ensure the user exists in public.users table to satisfy foreign key constraint
+    await prisma.users.upsert({
+      where: { id: userId },
+      update: {},
+      create: { id: userId },
+    });
+
     book = await prisma.books.create({
       data: {
         title: title,
