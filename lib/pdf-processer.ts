@@ -1,5 +1,6 @@
 import { PdfReader } from "pdfreader";
 import fs from "fs/promises";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
 export interface DoclingChunk {
   content: string;
@@ -38,7 +39,7 @@ export async function processPdf(pdfPath: string): Promise<DoclingResult> {
       let maxPage = 0;
       const pageTexts: Record<number, string[]> = {};
 
-      reader.parseBuffer(buffer, (err, item) => {
+      reader.parseBuffer(buffer, async (err, item) => {
         if (err) {
           resolve({
             success: false,
@@ -50,27 +51,24 @@ export async function processPdf(pdfPath: string): Promise<DoclingResult> {
         if (!item) {
           // End of parsing
           const fullText = Object.keys(pageTexts)
-            .sort((a, b) => Number(a) - Number(b))
             .map((page) => pageTexts[Number(page)].join(" "))
             .join("\n\n");
 
-          // Split text into chunks (by paragraphs/sections)
-          const raw_chunks = fullText.split("\n\n");
+          const splitter = new RecursiveCharacterTextSplitter({
+            chunkSize: 500,
+            chunkOverlap: 50,
+          });
 
-          const chunks: DoclingChunk[] = [];
-          for (let i = 0; i < raw_chunks.length; i++) {
-            const chunk_content = raw_chunks[i].trim();
-            if (chunk_content) {
-              // Skip empty chunks
-              chunks.push({
-                content: chunk_content,
-                type: "text",
-                metadata: {
-                  chunk_index: i,
-                },
-              });
-            }
-          }
+          const chunks: DoclingChunk[] = (
+            await splitter.createDocuments([fullText])
+          ).map((chunk, index) => ({
+            content: chunk.pageContent,
+            type: "text",
+            metadata: {
+              chunk_index: index,
+              ...chunk.metadata,
+            },
+          }));
 
           resolve({
             success: true,
