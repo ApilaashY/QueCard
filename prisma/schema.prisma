@@ -32,6 +32,7 @@ model books {
   users      users?      @relation(fields: [owner], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "card_sets_owner_fkey")
   card_sets  card_sets[]
   chats      chats[]
+  convo      convo[]
   documents  documents[]
   podcasts   podcasts[]
 }
@@ -52,7 +53,9 @@ model chats {
   user        String?
   ai_response String?
   book_id     String?  @db.Uuid
+  convo_id    String   @db.Uuid
   books       books?   @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  convo       convo    @relation(fields: [convo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -86,4 +89,14 @@ model podcasts {
   processing Boolean @default(true)
   title      String
   books      books   @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model convo {
+  id         String   @id(map: "Convo_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  book_id    String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title      String?  @default("NULL")
+  chats      chats[]
+  books      books    @relation(fields: [book_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Convo_book_id_fkey")
 }

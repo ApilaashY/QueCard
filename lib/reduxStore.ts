@@ -18,6 +18,7 @@ export interface Chat {
   user: string;
   ai_response: string;
   created_at: string;
+  convo_id: string;
 }
 
 export interface CardSet {

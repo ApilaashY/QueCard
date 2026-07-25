@@ -30,7 +30,12 @@ export async function POST(request: NextRequest) {
     chats = await prisma.chats.findMany({
       where: { book_id: id },
       orderBy: { created_at: "asc" },
-      select: { user: true, ai_response: true, created_at: true },
+      select: {
+        user: true,
+        ai_response: true,
+        created_at: true,
+        convo_id: true,
+      },
     });
     card_sets = await prisma.card_sets.findMany({
       where: { book_id: id },

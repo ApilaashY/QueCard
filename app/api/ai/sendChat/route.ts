@@ -4,7 +4,7 @@ import { generateEmbedding } from "@/lib/embeddings";
 import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: NextRequest) {
-  const { bookId, message } = await req.json();
+  const { bookId, message, chatConvo } = await req.json();
 
   if (
     !bookId ||
@@ -80,6 +80,25 @@ export async function POST(req: NextRequest) {
   // Get AI response
   let aiResponse = "";
 
+  let convo =
+    chatConvo !== undefined && chatConvo !== null && chatConvo.trim() !== ""
+      ? await prisma.convo.findUnique({
+          where: {
+            book_id: bookId,
+            id: chatConvo,
+          },
+        })
+      : null;
+
+  if (convo === null) {
+    convo = await prisma.convo.create({
+      data: {
+        title: "New Conversation",
+        book_id: bookId,
+      },
+    });
+  }
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -90,6 +109,7 @@ export async function POST(req: NextRequest) {
           contents: prompt,
         });
 
+        controller.enqueue(encoder.encode(convo.id + " "));
         for await (const chunk of responseStream) {
           controller.enqueue(encoder.encode(chunk.text));
           aiResponse += chunk.text || "";
@@ -101,6 +121,7 @@ export async function POST(req: NextRequest) {
             book_id: bookId,
             user: message,
             ai_response: aiResponse,
+            convo_id: convo.id,
           },
         });
       } catch (error) {

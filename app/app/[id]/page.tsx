@@ -21,6 +21,8 @@ export default function CardSet() {
   const [chatResponseStream, setChatResponseStream] = useState<string | null>(
     null,
   );
+  const [chatConvo, setChatConvo] = useState<string | null>(null);
+  const [convoRef, setConvoRef] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function loadCardSet() {
@@ -47,6 +49,29 @@ export default function CardSet() {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [book?.chats]);
+
+  useEffect(() => {
+    async function handleBeforeUnload() {
+      if (book?.id) {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/convos/get?bookId=${book.id}`,
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log(data);
+          if (data) {
+            const newRef = { ...convoRef };
+            for (const convo of data) {
+              newRef[convo.id] = convo.title;
+            }
+            setConvoRef(newRef);
+          }
+        }
+      }
+    }
+    handleBeforeUnload();
+  }, [book?.chats?.length]);
 
   const [uploadMenuOpen, setUploadMenuOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"pdf" | "youtube">("pdf");
@@ -180,10 +205,20 @@ export default function CardSet() {
           ...prevBook,
           chats: [
             ...prevBook.chats,
-            { id: "new", user: message, ai_response: "", created_at: "" },
+            {
+              id: "new",
+              user: message,
+              ai_response: "",
+              created_at: "",
+              convo_id: chatConvo || "",
+            },
           ],
         };
       });
+
+      if (chatConvo === null) {
+        setChatConvo("new");
+      }
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/ai/sendChat`,
@@ -195,6 +230,7 @@ export default function CardSet() {
           body: JSON.stringify({
             bookId: book.id,
             message,
+            chatConvo,
           }),
         },
       );
@@ -203,6 +239,8 @@ export default function CardSet() {
       const reader = response?.body?.getReader();
       const decoder = new TextDecoder("utf-8");
       let finished = false;
+      let gotConvo = false;
+      let start = "";
 
       if (!reader) return;
 
@@ -214,11 +252,23 @@ export default function CardSet() {
           break;
         }
 
+        if (!gotConvo && start.includes(" ")) {
+          setChatConvo(start.split(" ")[0]);
+          setChatResponseStream(start.split(" ")[1]);
+          console.log(start);
+          console.log(start.split(" ")[0]);
+          gotConvo = true;
+        }
+
         // 3. Decode the raw chunk byte data to text
         const chunkText = decoder.decode(value, { stream: true });
 
         // 4. Append the text to your UI in real time
-        setChatResponseStream((prev) => (prev || "") + chunkText);
+        if (gotConvo) {
+          setChatResponseStream((prev) => (prev || "") + chunkText);
+        } else {
+          start += chunkText;
+        }
       }
 
       // Close and reset stream
@@ -607,42 +657,86 @@ export default function CardSet() {
 
           {/* Chats */}
           <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0">
-            <h2 className="text-center text-3xl">Chats</h2>
-            <div ref={chatScrollRef} className="flex-1 overflow-y-auto min-h-0">
-              {[
-                ...(book?.chats || []),
-                ...(chatResponseStream == null
-                  ? []
-                  : [{ user: "", ai_response: chatResponseStream }]),
-              ].map((chat, index) => (
-                <div key={index} className="p-4 border-b border-gray-700">
-                  <h3 className="text-l font-semibold mb-5 pl-15 text-right">
-                    {chat.user}
-                  </h3>
-                  <div className="text-l font-semibold mb-1 pr-15">
-                    {chat.ai_response === "" ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-blue-600 animate-pulse"></div>
-                        <span className="text-gray-400">Thinking...</span>
+            <h2 className="text-center text-3xl">
+              <span
+                onClick={() => setChatConvo(null)}
+                className={`${chatConvo ? "" : "hidden"} cursor-pointer`}
+              >
+                {"<"}
+              </span>{" "}
+              Chats
+            </h2>
+            {chatConvo ? (
+              <div
+                ref={chatScrollRef}
+                className="flex-1 overflow-y-auto min-h-0"
+              >
+                {[
+                  ...(book?.chats || []),
+                  ...(chatResponseStream == null
+                    ? []
+                    : [
+                        {
+                          user: "",
+                          ai_response: chatResponseStream,
+                          convo_id: chatConvo || "",
+                        },
+                      ]),
+                ]
+                  .filter((chat) => chat.convo_id === chatConvo)
+                  .map((chat, index) => (
+                    <div key={index} className="p-4 border-b border-gray-700">
+                      <h3 className="text-l font-semibold mb-5 pl-15 text-right">
+                        {chat.user}
+                      </h3>
+                      <div className="text-l font-semibold mb-1 pr-15">
+                        {chat.ai_response === "" ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-blue-600 animate-pulse"></div>
+                            <span className="text-gray-400">Thinking...</span>
+                          </div>
+                        ) : (
+                          chat.ai_response.split(/\$\$|\$/).map((part, i) => {
+                            if (i % 2 === 0) return <span key={i}>{part}</span>;
+                            if (
+                              part.startsWith("\n") ||
+                              chat.ai_response
+                                .split(/\$\$|\$/)
+                                [i - 1]?.endsWith("\n")
+                            ) {
+                              return <BlockMath key={i} math={part.trim()} />;
+                            }
+                            return <InlineMath key={i} math={part} />;
+                          })
+                        )}
                       </div>
-                    ) : (
-                      chat.ai_response.split(/\$\$|\$/).map((part, i) => {
-                        if (i % 2 === 0) return <span key={i}>{part}</span>;
-                        if (
-                          part.startsWith("\n") ||
-                          chat.ai_response
-                            .split(/\$\$|\$/)
-                            [i - 1]?.endsWith("\n")
-                        ) {
-                          return <BlockMath key={i} math={part.trim()} />;
-                        }
-                        return <InlineMath key={i} math={part} />;
-                      })
-                    )}
-                  </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div
+                  className={`${book.chats.length === 0 ? "" : "hidden"} p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-800 rounded-lg`}
+                >
+                  <h3 className="text-l font-semibold mb-1">
+                    No conversations available
+                  </h3>
                 </div>
-              ))}
-            </div>
+                {[...new Set(book?.chats.map((chat) => chat.convo_id))].map(
+                  (convo_id, index) => (
+                    <div
+                      key={index}
+                      className="p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-800 rounded-lg"
+                      onClick={() => setChatConvo(convo_id)}
+                    >
+                      <h3 className="text-l font-semibold mb-1">
+                        {convoRef[convo_id] || `Conversation ${index + 1}`}
+                      </h3>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
             <form
               onSubmit={sendChat}
               className="flex flex-row mt-4 justify-center"
