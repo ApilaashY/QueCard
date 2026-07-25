@@ -18,6 +18,9 @@ export default function CardSet() {
   const [clickedDocument, setClickedDocument] = useState<number | null>(null);
   const [clickedAi, setClickedAi] = useState<number | null>(null);
   const [editingCardSet, setEditingCardSet] = useState<string>("");
+  const [chatResponseStream, setChatResponseStream] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     async function loadCardSet() {
@@ -196,13 +199,33 @@ export default function CardSet() {
         },
       );
 
-      if (response.ok) {
-        const updatedSet = await fetchBookSet(book.id, true);
-        if (updatedSet) {
-          setBook(updatedSet);
+      // 1. Get the stream reader and text decoder
+      const reader = response?.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let finished = false;
+
+      if (!reader) return;
+
+      // 2. Loop through the stream chunks asynchronously
+      while (!finished) {
+        const { value, done } = await reader.read();
+        if (done) {
+          finished = true;
+          break;
         }
-      } else {
-        console.error("Failed to send chat");
+
+        // 3. Decode the raw chunk byte data to text
+        const chunkText = decoder.decode(value, { stream: true });
+
+        // 4. Append the text to your UI in real time
+        setChatResponseStream((prev) => (prev || "") + chunkText);
+      }
+
+      // Close and reset stream
+      const updatedSet = await fetchBookSet(book.id, true);
+      if (updatedSet) {
+        setChatResponseStream(null);
+        setBook(updatedSet);
       }
     } catch (error) {
       console.error("Error sending chat:", error);
@@ -586,7 +609,12 @@ export default function CardSet() {
           <div className="bg-black/30 rounded-2xl flex flex-col p-4 min-h-0">
             <h2 className="text-center text-3xl">Chats</h2>
             <div ref={chatScrollRef} className="flex-1 overflow-y-auto min-h-0">
-              {book?.chats.map((chat, index) => (
+              {[
+                ...(book?.chats || []),
+                ...(chatResponseStream == null
+                  ? []
+                  : [{ user: "", ai_response: chatResponseStream }]),
+              ].map((chat, index) => (
                 <div key={index} className="p-4 border-b border-gray-700">
                   <h3 className="text-l font-semibold mb-5 pl-15 text-right">
                     {chat.user}

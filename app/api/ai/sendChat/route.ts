@@ -79,30 +79,47 @@ export async function POST(req: NextRequest) {
 
   // Get AI response
   let aiResponse = "";
-  try {
-    const response = await genAi.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-    });
-    aiResponse = response.text || "";
-  } catch (error) {
-    console.error("Error generating AI response:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to generate AI response" }),
-      { status: 500 },
-    );
-  }
 
-  // Store the chat in the database
-  await prisma.chats.create({
-    data: {
-      book_id: bookId,
-      user: message,
-      ai_response: aiResponse,
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const responseStream = await genAi.models.generateContentStream({
+          model: "gemini-3-flash-preview",
+          contents: prompt,
+        });
+
+        for await (const chunk of responseStream) {
+          controller.enqueue(encoder.encode(chunk.text));
+          aiResponse += chunk.text || "";
+        }
+
+        // Store the chat in the database
+        await prisma.chats.create({
+          data: {
+            book_id: bookId,
+            user: message,
+            ai_response: aiResponse,
+          },
+        });
+      } catch (error) {
+        console.error("Error generating AI response:", error);
+        return new NextResponse(
+          JSON.stringify({ error: "Failed to generate AI response" }),
+          { status: 500 },
+        );
+      } finally {
+        controller.close();
+      }
     },
   });
 
-  return new NextResponse(JSON.stringify({ response: aiResponse }), {
-    status: 200,
+  return new NextResponse(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
   });
 }
