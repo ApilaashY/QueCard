@@ -27,17 +27,17 @@ Instead of starting with a blank chat window, QueCard starts with what you are l
 
 ## Built With
 
-| Area | Technologies |
-| --- | --- |
-| Web app and API | Next.js App Router, React, TypeScript |
-| Database and models | PostgreSQL, Prisma, `pgvector` |
-| Authentication and object storage | Supabase Auth, Supabase Storage |
-| Language and speech generation | Google Gemini API |
-| Embeddings and retrieval | Transformers.js, `Xenova/bge-small-en-v1.5`, vector similarity search |
-| Request controls and cache | Redis, `ioredis` |
-| PDF / video ingestion | `pdfreader`, LangChain text splitters, YouTube transcript retrieval |
-| Optional OCR | AWS Textract and S3 |
-| Tests and linting | Jest, React Testing Library, ESLint |
+| Area                              | Technologies                                                          |
+| --------------------------------- | --------------------------------------------------------------------- |
+| Web app and API                   | Next.js App Router, React, TypeScript                                 |
+| Database and models               | PostgreSQL, Prisma, `pgvector`                                        |
+| Authentication and object storage | Supabase Auth, Supabase Storage                                       |
+| Language and speech generation    | Google Gemini API                                                     |
+| Embeddings and retrieval          | Transformers.js, `Xenova/bge-small-en-v1.5`, vector similarity search |
+| Request controls and cache        | Redis, `ioredis`                                                      |
+| PDF / video ingestion             | `pdfreader`, LangChain text splitters, YouTube transcript retrieval   |
+| Optional OCR                      | AWS Textract and S3                                                   |
+| Tests and linting                 | Jest, React Testing Library, ESLint                                   |
 
 ## Repository Map
 
@@ -54,13 +54,13 @@ docker/                Container image and startup scripts
 
 Key API route groups:
 
-| Route group | Purpose |
-| --- | --- |
-| `/api/queue-card/*` | Create, list, fetch, edit, and delete books and flashcard sets |
-| `/api/documents/*` | Upload, process, check, and remove source documents |
-| `/api/ai/*` | Generate flashcards, generate podcasts, and stream book chat |
-| `/api/convos/*` | Retrieve book conversation metadata |
-| `/api/podcasts/audio/[id]` | Stream a stored podcast WAV file |
+| Route group                | Purpose                                                        |
+| -------------------------- | -------------------------------------------------------------- |
+| `/api/queue-card/*`        | Create, list, fetch, edit, and delete books and flashcard sets |
+| `/api/documents/*`         | Upload, process, check, and remove source documents            |
+| `/api/ai/*`                | Generate flashcards, generate podcasts, and stream book chat   |
+| `/api/convos/*`            | Retrieve book conversation metadata                            |
+| `/api/podcasts/audio/[id]` | Stream a stored podcast WAV file                               |
 
 ## Run Locally
 
@@ -154,36 +154,36 @@ Open [http://localhost:3000](http://localhost:3000), create an account, and star
 
 ## Environment Variables
 
-| Variable | Required for | Notes |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Sign-up and sign-in | Supabase project URL used by the browser client. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sign-up and sign-in | Supabase anon/public key; safe to expose as a public project key. |
-| `DATABASE_URL` | Database access | PostgreSQL connection used by Prisma at runtime. |
-| `DIRECT_URL` | Prisma CLI / direct DB connection | Optional if `DATABASE_URL` is usable directly; Prisma config falls back to it. |
-| `GEMINI_API_KEY` | Flashcards, edits, chat, podcasts | Server-side key for Gemini text and audio generation. |
-| `REDIS_URL` | AI generation and book-list cache | Required by the Redis client; use `redis://localhost:6379` for the Compose service locally. |
-| `NEXT_PUBLIC_BASE_URL` | Browser-side API requests | Set to the app origin, e.g. `http://localhost:3000`. |
-| `SUPABASE_URL` | Podcast audio storage | Optional if `NEXT_PUBLIC_SUPABASE_URL` is set. |
-| `SUPABASE_ANON_KEY` | Podcast audio storage and server auth helper | Despite the name, this server variable must contain the Supabase service-role key. Treat it as a secret. |
-| `USE_AWS_OCR` | AWS PDF OCR | Set to `true` to select the Textract/S3 path. |
-| `AWS_REGION` | AWS PDF OCR | Defaults to `us-east-1` in the AWS clients. |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | AWS PDF OCR | AWS credentials with only the permissions the app needs. |
-| `AWS_S3_BUCKET_NAME` | AWS PDF OCR | Bucket used for the uploaded source PDFs. |
+| Variable                                     | Required for                                 | Notes                                                                                                    |
+| -------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`                   | Sign-up and sign-in                          | Supabase project URL used by the browser client.                                                         |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`              | Sign-up and sign-in                          | Supabase anon/public key; safe to expose as a public project key.                                        |
+| `DATABASE_URL`                               | Database access                              | PostgreSQL connection used by Prisma at runtime.                                                         |
+| `DIRECT_URL`                                 | Prisma CLI / direct DB connection            | Optional if `DATABASE_URL` is usable directly; Prisma config falls back to it.                           |
+| `GEMINI_API_KEY`                             | Flashcards, edits, chat, podcasts            | Server-side key for Gemini text and audio generation.                                                    |
+| `REDIS_URL`                                  | AI generation and book-list cache            | Required by the Redis client; use `redis://localhost:6379` for the Compose service locally.              |
+| `NEXT_PUBLIC_BASE_URL`                       | Browser-side API requests                    | Set to the app origin, e.g. `http://localhost:3000`.                                                     |
+| `SUPABASE_URL`                               | Podcast audio storage                        | Optional if `NEXT_PUBLIC_SUPABASE_URL` is set.                                                           |
+| `SUPABASE_ANON_KEY`                          | Podcast audio storage and server auth helper | Despite the name, this server variable must contain the Supabase service-role key. Treat it as a secret. |
+| `USE_AWS_OCR`                                | AWS PDF OCR                                  | Set to `true` to select the Textract/S3 path.                                                            |
+| `AWS_REGION`                                 | AWS PDF OCR                                  | Defaults to `us-east-1` in the AWS clients.                                                              |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | AWS PDF OCR                                  | AWS credentials with only the permissions the app needs.                                                 |
+| `AWS_S3_BUCKET_NAME`                         | AWS PDF OCR                                  | Bucket used for the uploaded source PDFs.                                                                |
 
 ## Commands
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Next.js development server. |
-| `npm run build` | Build the production app. |
-| `npm start` | Serve a production build. |
-| `npm run lint` | Run ESLint. |
-| `npm test` | Run the Jest suite. |
-| `npm run test:watch` | Run Jest in watch mode. |
-| `npm run test:coverage` | Run Jest with coverage collection. |
-| `npm run db:generate` | Generate Prisma Client. |
-| `npm run db:push` | Synchronize the Prisma schema with the configured database. |
-| `npm run db:studio` | Open Prisma Studio. |
+| Command                 | Description                                                 |
+| ----------------------- | ----------------------------------------------------------- |
+| `npm run dev`           | Start the Next.js development server.                       |
+| `npm run build`         | Build the production app.                                   |
+| `npm start`             | Serve a production build.                                   |
+| `npm run lint`          | Run ESLint.                                                 |
+| `npm test`              | Run the Jest suite.                                         |
+| `npm run test:watch`    | Run Jest in watch mode.                                     |
+| `npm run test:coverage` | Run Jest with coverage collection.                          |
+| `npm run db:generate`   | Generate Prisma Client.                                     |
+| `npm run db:push`       | Synchronize the Prisma schema with the configured database. |
+| `npm run db:studio`     | Open Prisma Studio.                                         |
 
 `docker compose up --build` builds and starts both the application and Redis. The Compose app service currently forwards database, Supabase, and Redis settings, but does not include every setting QueCard needs (including `GEMINI_API_KEY` and `NEXT_PUBLIC_BASE_URL`). Extend the service configuration and provide any public variables required at build time before relying on the container for a complete app workflow. The application container's entrypoint enables `pgvector`, runs `prisma db push --accept-data-loss`, and then starts Next.js. Review that schema-sync behavior carefully before using the provided container flow against a production database; use a deliberate migration process for production deployments.
 
