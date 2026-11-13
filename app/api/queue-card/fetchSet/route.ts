@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
     });
     chats = await prisma.chats.findMany({
       where: { book_id: id },
-      orderBy: { created_at: "asc" },
       select: {
         user: true,
         ai_response: true,
@@ -54,6 +53,16 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching book:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    if (
+      errorMessage.includes("does not exist") ||
+      errorMessage.includes("column")
+    ) {
+      console.error(
+        "Database schema mismatch. Ensure you have run: npm run db:push",
+      );
+    }
     return new NextResponse(
       JSON.stringify({ error: "Internal server error" }),
       {
