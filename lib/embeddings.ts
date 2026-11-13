@@ -5,7 +5,7 @@ const genAi = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 /**
  * Generate embeddings for a single text using Google Gemini API
  * @param text - The text to embed
- * @returns Array of numbers representing the embedding (768 dimensions for text-embedding-004)
+ * @returns Array of numbers representing the embedding
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   if (!process.env.GEMINI_API_KEY) {
@@ -13,7 +13,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 
   const response = await genAi.models.embedContent({
-    model: "text-embedding-004",
+    model: "gemini-embedding-001",
     contents: [text],
   });
 
@@ -40,7 +40,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   }
 
   const response = await genAi.models.embedContent({
-    model: "text-embedding-004",
+    model: "gemini-embedding-001",
     contents: texts,
   });
 
