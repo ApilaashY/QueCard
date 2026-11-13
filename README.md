@@ -21,7 +21,7 @@ Instead of starting with a blank chat window, QueCard starts with what you are l
 
 1. Create a book and add a PDF or a YouTube URL.
 2. QueCard extracts source text and splits it into chunks. PDF text extraction is local by default; YouTube text comes from the video's transcript.
-3. The app creates normalized 384-dimensional embeddings with `Xenova/bge-small-en-v1.5` and stores the chunks and vectors in PostgreSQL with `pgvector`.
+3. The app creates normalized embeddings with Google Gemini's `text-embedding-004` model and stores the chunks and vectors in PostgreSQL with `pgvector`.
 4. Ask for flashcards or a podcast, or start a chat. Generation uses the stored source chunks; chat embeds the question and retrieves the closest five chunks before calling Gemini.
 5. Study the resulting cards, listen to the generated audio, or continue asking questions from the same book.
 
@@ -32,9 +32,9 @@ Instead of starting with a blank chat window, QueCard starts with what you are l
 | Web app and API                   | Next.js App Router, React, TypeScript                                 |
 | Database and models               | PostgreSQL, Prisma, `pgvector`                                        |
 | Authentication and object storage | Supabase Auth, Supabase Storage                                       |
-| Language and speech generation    | Google Gemini API                                                     |
-| Embeddings and retrieval          | Transformers.js, `Xenova/bge-small-en-v1.5`, vector similarity search |
-| Request controls and cache        | Redis, `ioredis`                                                      |
+| Language, speech, and embeddings  | Google Gemini API (generation and `text-embedding-004`)               |
+| Retrieval                         | Vector similarity search with `pgvector`                              |
+| Request controls and cache        | Upstash Redis                                                         |
 | PDF / video ingestion             | `pdfreader`, LangChain text splitters, YouTube transcript retrieval   |
 | Optional OCR                      | AWS Textract and S3                                                   |
 | Tests and linting                 | Jest, React Testing Library, ESLint                                   |

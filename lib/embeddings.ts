@@ -1,30 +1,32 @@
-import { pipeline, FeatureExtractionPipeline } from "@xenova/transformers";
+import { GoogleGenAI } from "@google/genai";
 
-// Singleton pattern to cache the embedding model
-let embeddingPipeline: FeatureExtractionPipeline | null = null;
-
-/**
- * Get or initialize the embedding pipeline
- */
-async function getEmbeddingPipeline(): Promise<FeatureExtractionPipeline> {
-  if (!embeddingPipeline) {
-    embeddingPipeline = (await pipeline(
-      "feature-extraction",
-      "Xenova/bge-small-en-v1.5"
-    )) as FeatureExtractionPipeline;
-  }
-  return embeddingPipeline;
-}
+const genAi = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
- * Generate embeddings for a single text
+ * Generate embeddings for a single text using Google Gemini API
  * @param text - The text to embed
- * @returns Array of numbers representing the embedding (384 dimensions)
+ * @returns Array of numbers representing the embedding (768 dimensions for text-embedding-004)
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const pipe = await getEmbeddingPipeline();
-  const output = await pipe(text, { pooling: "mean", normalize: true });
-  return Array.from(output.data);
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+
+  const response = await genAi.models.embedContent({
+    model: "text-embedding-004",
+    contents: [text],
+  });
+
+  if (!response.embeddings || response.embeddings.length === 0) {
+    throw new Error("Failed to generate embedding");
+  }
+
+  const embedding = response.embeddings[0];
+  if (!embedding.values) {
+    throw new Error("Failed to generate embedding values");
+  }
+
+  return embedding.values;
 }
 
 /**
@@ -33,12 +35,23 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  * @returns Array of embeddings
  */
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
-  const embeddings: number[][] = [];
-
-  for (const text of texts) {
-    const embedding = await generateEmbedding(text);
-    embeddings.push(embedding);
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
   }
 
-  return embeddings;
+  const response = await genAi.models.embedContent({
+    model: "text-embedding-004",
+    contents: texts,
+  });
+
+  if (!response.embeddings) {
+    throw new Error("Failed to generate embeddings");
+  }
+
+  return response.embeddings.map((embedding) => {
+    if (!embedding.values) {
+      throw new Error("Failed to generate embedding values");
+    }
+    return embedding.values;
+  });
 }
