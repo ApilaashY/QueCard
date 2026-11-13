@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
   // Rate Limiting
   const ip = request.headers.get("x-forwarded-for") || "anonymous";
   const rateLimitKey = `rate_limit:ai_gen:${ip}`;
-  
+
   try {
     const currentCount = await redis.incr(rateLimitKey);
-    
+
     if (currentCount === 1) {
       await redis.expire(rateLimitKey, 3600); // 1 hour window
     }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
   const genAi = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   const response = await genAi.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash-lite",
     contents: `Given the context, generate a podcast script that is engaging and informative. The podcast should be around 5 minutes long and should cover the key topics in the context. The podcast should be conversational and easy to follow.
     Make the podcast contain 2 distinct hosts, Person 1 and Person 2.
     Only output the podcast script, nothing else.
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
   try {
     // Generate audio file
     const response = await genAi.models.generateContent({
-      model: "gemini-3.1-flash-tts-preview",
+      model: "gemini-3.8-flash-lite-tts",
       contents: [{ role: "user", parts: [{ text: script }] }],
       config: {
         temperature: 1,
