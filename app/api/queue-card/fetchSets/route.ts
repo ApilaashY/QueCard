@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   // Try to get from cache
   try {
-    const cachedSets = await redis.get(cacheKey);
+    const cachedSets = await redis.get<string>(cacheKey);
     if (cachedSets) {
       console.log("Serving sets from cache");
       return NextResponse.json(
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Cache the results for 10 minutes
-    await redis.set(cacheKey, JSON.stringify(books), "EX", 600);
+    await redis.setex(cacheKey, 600, JSON.stringify(books));
   } catch (error) {
     console.error("Error setting Redis cache:", error);
   }

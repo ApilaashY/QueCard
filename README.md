@@ -69,7 +69,7 @@ Key API route groups:
 - Node.js 20.9 or newer and npm
 - A Supabase project with a PostgreSQL database that supports `pgvector`
 - A Google Gemini API key
-- A Redis server
+- An Upstash Redis database (free tier available) or any Redis server
 - A Supabase Storage bucket named `Podcasts` if you want podcast audio generation
 
 AWS credentials and an S3 bucket are only needed when opting into AWS Textract for PDF processing.
@@ -98,8 +98,10 @@ GEMINI_API_KEY=your-gemini-api-key
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-supabase-service-role-key
 
-# Local service endpoints
-REDIS_URL=redis://localhost:6379
+# Upstash Redis (get free tier at https://upstash.com/pricing/redis)
+UPSTASH_REDIS_REST_URL=https://your-upstash-url.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
 
@@ -161,7 +163,8 @@ Open [http://localhost:3000](http://localhost:3000), create an account, and star
 | `DATABASE_URL`                               | Database access                              | PostgreSQL connection used by Prisma at runtime.                                                         |
 | `DIRECT_URL`                                 | Prisma CLI / direct DB connection            | Optional if `DATABASE_URL` is usable directly; Prisma config falls back to it.                           |
 | `GEMINI_API_KEY`                             | Flashcards, edits, chat, podcasts            | Server-side key for Gemini text and audio generation.                                                    |
-| `REDIS_URL`                                  | AI generation and book-list cache            | Required by the Redis client; use `redis://localhost:6379` for the Compose service locally.              |
+| `UPSTASH_REDIS_REST_URL`                     | AI generation and book-list cache            | Upstash Redis REST URL; get a free database at https://upstash.com/pricing/redis.                       |
+| `UPSTASH_REDIS_REST_TOKEN`                   | AI generation and book-list cache            | Upstash Redis REST token; keep this secret.                                                              |
 | `NEXT_PUBLIC_BASE_URL`                       | Browser-side API requests                    | Set to the app origin, e.g. `http://localhost:3000`.                                                     |
 | `SUPABASE_URL`                               | Podcast audio storage                        | Optional if `NEXT_PUBLIC_SUPABASE_URL` is set.                                                           |
 | `SUPABASE_ANON_KEY`                          | Podcast audio storage and server auth helper | Despite the name, this server variable must contain the Supabase service-role key. Treat it as a secret. |

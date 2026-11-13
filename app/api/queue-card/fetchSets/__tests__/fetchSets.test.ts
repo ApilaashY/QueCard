@@ -16,7 +16,7 @@ jest.mock("@/lib/prisma", () => ({
 jest.mock("@/lib/redis", () => ({
   redis: {
     get: jest.fn(),
-    set: jest.fn(),
+    setex: jest.fn(),
   },
 }));
 
@@ -69,11 +69,10 @@ describe("POST /api/queue-card/fetchSets", () => {
       where: { owner: userId },
       select: { id: true, title: true },
     });
-    expect(redis.set).toHaveBeenCalledWith(
+    expect(redis.setex).toHaveBeenCalledWith(
       cacheKey,
-      JSON.stringify(mockSets),
-      "EX",
       600,
+      JSON.stringify(mockSets),
     );
     expect(data).toEqual({ sets: mockSets });
     expect(response.status).toBe(200);
