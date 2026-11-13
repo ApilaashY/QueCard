@@ -13,7 +13,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Invalidate cache
-  await redis.del(`user_sets:${userId}`);
+  try {
+    await redis.del(`user_sets:${userId}`);
+  } catch (error) {
+    console.error("Redis cache invalidation error:", error);
+  }
 
   try {
     await prisma.books.findUniqueOrThrow({

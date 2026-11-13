@@ -27,8 +27,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
+  try {
     // Invalidate cache
     await redis.del(`user_sets:${userId}`);
+  } catch (error) {
+    console.error("Redis cache invalidation error:", error);
+  }
 
     return new NextResponse(JSON.stringify({ id: book.id }), { status: 200 });
   } catch (error) {

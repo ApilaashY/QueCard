@@ -13,17 +13,23 @@ export async function POST(request: NextRequest) {
   // Rate Limiting
   const ip = request.headers.get("x-forwarded-for") || "anonymous";
   const rateLimitKey = `rate_limit:ai_gen:${ip}`;
-  const currentCount = await redis.incr(rateLimitKey);
+  
+  try {
+    const currentCount = await redis.incr(rateLimitKey);
+    
+    if (currentCount === 1) {
+      await redis.expire(rateLimitKey, 3600); // 1 hour window
+    }
 
-  if (currentCount === 1) {
-    await redis.expire(rateLimitKey, 3600); // 1 hour window
-  }
-
-  if (currentCount >= 5 && process.env.DEV !== "true") {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Try again in an hour." },
-      { status: 429 },
-    );
+    if (currentCount >= 5 && process.env.DEV !== "true") {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Try again in an hour." },
+        { status: 429 },
+      );
+    }
+  } catch (error) {
+    console.error("Redis rate limit error:", error);
+    // Continue without rate limiting if Redis fails
   }
 
   // Make new card set
