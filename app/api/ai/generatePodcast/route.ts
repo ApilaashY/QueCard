@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { supabaseAdmin } from "@/lib/supabase/admin";

@@ -175,7 +175,7 @@ Open [http://localhost:3000](http://localhost:3000), create an account, and star
 | Command                 | Description                                                 |
 | ----------------------- | ----------------------------------------------------------- |
 | `npm run dev`           | Start the Next.js development server.                       |
-| `npm run build`         | Build the production app.                                   |
+| `npm run build`         | Generate Prisma Client and build the production app.        |
 | `npm start`             | Serve a production build.                                   |
 | `npm run lint`          | Run ESLint.                                                 |
 | `npm test`              | Run the Jest suite.                                         |
