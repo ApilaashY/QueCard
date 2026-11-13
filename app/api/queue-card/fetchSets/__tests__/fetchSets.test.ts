@@ -43,9 +43,22 @@ describe("POST /api/queue-card/fetchSets", () => {
       headers: { Authorization: "Bearer dummy-token" },
     });
 
-  it("should return sets from cache if available", async () => {
+  it("should return sets from cache if available (string)", async () => {
     const mockSets = [{ id: "1", title: "Cached Set" }];
     (redis.get as jest.Mock).mockResolvedValue(JSON.stringify(mockSets));
+
+    const response = await POST(createMockRequest());
+    const data = await response.json();
+
+    expect(redis.get).toHaveBeenCalledWith(cacheKey);
+    expect(prisma.books.findMany).not.toHaveBeenCalled();
+    expect(data).toEqual({ sets: mockSets });
+    expect(response.status).toBe(200);
+  });
+
+  it("should return sets from cache if available (object)", async () => {
+    const mockSets = [{ id: "1", title: "Cached Set" }];
+    (redis.get as jest.Mock).mockResolvedValue(mockSets);
 
     const response = await POST(createMockRequest());
     const data = await response.json();

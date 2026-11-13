@@ -15,11 +15,13 @@ export async function POST(req: NextRequest) {
 
   // Try to get from cache
   try {
-    const cachedSets = await redis.get<string>(cacheKey);
+    const cachedSets = await redis.get<string | object>(cacheKey);
     if (cachedSets) {
       console.log("Serving sets from cache");
+      // Handle both string and object responses from Upstash
+      const sets = typeof cachedSets === "string" ? JSON.parse(cachedSets) : cachedSets;
       return NextResponse.json(
-        { sets: JSON.parse(cachedSets) },
+        { sets },
         { status: 200 },
       );
     }

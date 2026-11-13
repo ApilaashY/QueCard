@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  let book;
   try {
     // Ensure the user exists in public.users table to satisfy foreign key constraint
     await prisma.users.upsert({
@@ -20,19 +19,19 @@ export async function POST(request: NextRequest) {
       create: { id: userId },
     });
 
-    book = await prisma.books.create({
+    const book = await prisma.books.create({
       data: {
         title: title,
         owner: userId,
       },
     });
 
-  try {
     // Invalidate cache
-    await redis.del(`user_sets:${userId}`);
-  } catch (error) {
-    console.error("Redis cache invalidation error:", error);
-  }
+    try {
+      await redis.del(`user_sets:${userId}`);
+    } catch (error) {
+      console.error("Redis cache invalidation error:", error);
+    }
 
     return new NextResponse(JSON.stringify({ id: book.id }), { status: 200 });
   } catch (error) {

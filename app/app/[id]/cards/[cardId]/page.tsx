@@ -2,7 +2,7 @@
 
 import { Card, fetchCardSet } from "@/lib/reduxStore";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
@@ -27,23 +27,32 @@ export default function CardPage() {
     fetchCards();
   }, [id, cardId, router]);
 
-  const handleNext = () => {
-    if (currentIndex < cards.length - 1) {
-      setIsFlipped(false);
-      setTimeout(() => setCurrentIndex(currentIndex + 1), 150);
-    }
-  };
+  const handleNext = useCallback(() => {
+    setCards((prevCards) => {
+      setCurrentIndex((prevIndex) => {
+        if (prevIndex < prevCards.length - 1) {
+          setIsFlipped(false);
+          setTimeout(() => setCurrentIndex(prevIndex + 1), 150);
+        }
+        return prevIndex;
+      });
+      return prevCards;
+    });
+  }, []);
 
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setIsFlipped(false);
-      setTimeout(() => setCurrentIndex(currentIndex - 1), 150);
-    }
-  };
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prevIndex) => {
+      if (prevIndex > 0) {
+        setIsFlipped(false);
+        setTimeout(() => setCurrentIndex(prevIndex - 1), 150);
+      }
+      return prevIndex;
+    });
+  }, []);
 
-  const handleFlip = () => {
-    setIsFlipped(!isFlipped);
-  };
+  const handleFlip = useCallback(() => {
+    setIsFlipped((prev) => !prev);
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -59,7 +68,7 @@ export default function CardPage() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, isFlipped, cards.length]);
+  }, [handleFlip, handleNext, handlePrev]);
 
   if (cards.length === 0) {
     return (

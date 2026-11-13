@@ -71,7 +71,7 @@ export default function CardSet() {
       }
     }
     handleBeforeUnload();
-  }, [book?.chats?.length]);
+  }, [book?.id, convoRef]);
 
   const [uploadMenuOpen, setUploadMenuOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"pdf" | "youtube">("pdf");
